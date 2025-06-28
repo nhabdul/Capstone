@@ -143,7 +143,7 @@ if user_input.strip() and not st.session_state.clear_next:
     reply = cluster_aware_response(user_input)
     st.session_state.chat_history.append(("Bot", reply))
     st.session_state.clear_next = True
-    st.experimental_rerun()
+    st.rerun()
 
 # --- Reset input safely after rerun ---
 if st.session_state.clear_next:
