@@ -1,121 +1,99 @@
-# chatbot_with_memory.py
 import streamlit as st
 import pandas as pd
+import numpy as np
 
-@st.cache_data
-def load_data():
-    return pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
+# Load your preprocessed dataset
+df = pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
 
-df_clusters = load_data()
+# Initialize session state for memory
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "last_cluster" not in st.session_state:
+    st.session_state.last_cluster = None
+if "last_product" not in st.session_state:
+    st.session_state.last_product = None
 
-# Initialize session memory
-if "topics" not in st.session_state:
-    st.session_state.topics = {"Default": []}
-if "active_topic" not in st.session_state:
-    st.session_state.active_topic = "Default"
-if "chat_memory" not in st.session_state:
-    st.session_state.chat_memory = {}
+# Get unique product categories
+available_categories = sorted(df["Product_Category"].dropna().unique().tolist())
 
-# Helper: Get cluster info
-def get_cluster_info(cluster_id):
-    subset = df_clusters[df_clusters['Cluster'] == cluster_id]
-    if subset.empty:
-        return "❌ That cluster doesn't exist."
-    avg_income = subset['Annual_Income'].mean()
-    avg_spend = subset['Spending_Score'].mean()
-    avg_order_value = subset['Average_Order_Value'].mean()
-    avg_orders = subset['Number_of_Orders'].mean()
-    avg_review = subset['Review_Score'].mean()
-    avg_age = subset['Age'].mean()
-    top_device = subset['Device_Used'].mode()[0]
-    top_payment = subset['Preferred_Payment_Method'].mode()[0]
-    top_product = subset['Product_Category'].mode()[0]
-    return (
-        f"### 🧠 Cluster {cluster_id} Overview\n"
-        f"- Average Income: ${avg_income:,.2f}\n"
-        f"- Spending Score: {avg_spend:.1f}\n"
-        f"- Avg Order Value: ${avg_order_value:.2f}\n"
-        f"- Orders per Customer: {avg_orders:.2f}\n"
-        f"- Average Review Score: {avg_review:.2f}\n"
-        f"- Age: {avg_age:.1f} years\n"
-        f"- Most used payment method: **{top_payment}**\n"
-        f"- Most used device: **{top_device}**\n"
-        f"- Common product: **{top_product}**"
-    )
+# Title and sidebar
+st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
+st.sidebar.title("🧠 Chat History")
+st.sidebar.info("This chatbot remembers your last product or cluster context.")
 
-# Context-aware logic
-def cluster_aware_response(user_input):
-    input_lower = user_input.lower()
-    memory = st.session_state.chat_memory
+st.title("📊 Customer Insight Chatbot")
 
-    # Check direct cluster query
-    if "cluster" in input_lower:
-        for i in range(5):
-            if f"{i}" in input_lower:
-                memory["last_cluster"] = i
-                return get_cluster_info(i)
+# Display previous messages
+for msg in st.session_state.messages:
+    role, content = msg["role"], msg["content"]
+    align = "💬 You:" if role == "user" else "🤖 Bot:"
+    st.markdown(f"**{align}** {content}")
 
-    # Product category question
-    if "product" in input_lower and "categor" in input_lower:
-        categories = df_clusters['Product_Category'].unique()
-        return "**Available Product Categories:**\n" + "\n".join(f"- {c}" for c in sorted(categories))
+# Chat input
+user_input = st.text_input("Type your question here", key="user_input")
 
-    # Ask about who buys what
-    product_categories = df_clusters['Product_Category'].unique()
-    for product in product_categories:
-        if product.lower() in input_lower:
-            subset = df_clusters[df_clusters['Product_Category'] == product]
-            top_cluster = subset['Cluster'].value_counts().idxmax()
-            memory["last_product"] = product
-            memory["last_cluster"] = top_cluster
-            return (
-                f"💡 Customers who purchase **{product}** the most are in **Cluster {top_cluster}**.\n\n"
-                f"You can ask about this cluster or their spending behavior."
-            )
+# --- Core Logic ---
+def cluster_aware_response(user_msg):
+    msg = user_msg.lower()
+    response = "Sorry, I couldn't understand your request."
 
-    # Follow-up Q: e.g., what's their income?
-    if any(word in input_lower for word in ["income", "salary"]):
-        cluster_id = memory.get("last_cluster")
-        if cluster_id is not None:
-            income = df_clusters[df_clusters['Cluster'] == cluster_id]['Annual_Income'].mean()
-            return f"🧾 The average income for Cluster {cluster_id} is **${income:,.2f}**."
+    # 1. Ask about available categories
+    if ("product" in msg and "categor" in msg) or "available categories" in msg:
+        return "The available product categories are:\n- " + "\n- ".join(available_categories)
 
-    if "spending" in input_lower:
-        cluster_id = memory.get("last_cluster")
-        if cluster_id is not None:
-            spend = df_clusters[df_clusters['Cluster'] == cluster_id]['Spending_Score'].mean()
-            return f"💸 Cluster {cluster_id} has an average spending score of **{spend:.1f}**."
+    # 2. Ask who buys what
+    elif "who" in msg and "buy" in msg:
+        for category in available_categories:
+            if category.lower() in msg:
+                cluster_id = df[df["Product_Category"] == category]["Cluster"].mode().iloc[0]
+                st.session_state.last_product = category
+                st.session_state.last_cluster = cluster_id
+                return f"Customers in **Cluster {cluster_id}** most frequently purchase **{category}** products."
+        return "Please specify a valid product category like Fashion, Electronics, etc."
 
-    return "🤖 I didn't understand that. Try asking about products, clusters, or spending."
+    # 3. Ask about follow-up to cluster
+    elif any(kw in msg for kw in ["income", "salary", "spend", "score", "order", "review", "device", "region", "gender"]):
+        cluster_id = st.session_state.last_cluster
+        if cluster_id is None:
+            return "Please ask about a product or cluster first so I know who you're referring to."
 
-# UI Layout
-st.sidebar.title("📂 Chat History")
-topic_choice = st.sidebar.radio("Choose a topic:", list(st.session_state.topics.keys()))
-if topic_choice != st.session_state.active_topic:
-    st.session_state.active_topic = topic_choice
+        subset = df[df["Cluster"] == cluster_id]
+        if "income" in msg or "salary" in msg:
+            return f"Average income in Cluster {cluster_id} is ${subset['Annual_Income'].mean():,.2f}."
+        elif "spend" in msg:
+            return f"Average spending score in Cluster {cluster_id} is {subset['Spending_Score'].mean():.2f}."
+        elif "order" in msg:
+            return f"Average number of orders in Cluster {cluster_id} is {subset['Number_of_Orders'].mean():.2f}."
+        elif "review" in msg:
+            return f"Average review score in Cluster {cluster_id} is {subset['Review_Score'].mean():.2f}."
+        elif "device" in msg:
+            mode = subset["Device_Used"].mode().iloc[0]
+            return f"The most common device in Cluster {cluster_id} is **{mode}**."
+        elif "region" in msg:
+            top = subset["Customer_Region"].mode().iloc[0]
+            return f"Most customers in Cluster {cluster_id} are from **{top}** region."
+        elif "gender" in msg:
+            top = subset["Gender"].mode().iloc[0]
+            return f"Most customers in Cluster {cluster_id} are **{top}**."
 
-new_topic = st.sidebar.text_input("Start new topic")
-if st.sidebar.button("➕ Add Topic") and new_topic:
-    st.session_state.topics[new_topic] = []
-    st.session_state.active_topic = new_topic
+    # 4. Ask about a specific cluster
+    elif "cluster" in msg:
+        import re
+        match = re.search(r"cluster\s*(\d+)", msg)
+        if match:
+            cluster_id = int(match.group(1))
+            if cluster_id in df["Cluster"].unique():
+                st.session_state.last_cluster = cluster_id
+                return f"You're now viewing insights for **Cluster {cluster_id}**. Ask about their income, spending, or preferences!"
+            else:
+                return f"Cluster {cluster_id} doesn't exist."
+        return "Please specify a cluster number, like 'Cluster 1'."
 
-st.title("🧠 Customer Insight Chatbot with Memory")
-chat_history = st.session_state.topics[st.session_state.active_topic]
+    return response
 
-for sender, msg in chat_history:
-    if sender == "user":
-        st.markdown(f"**🧑 You:** {msg}")
-    else:
-        st.markdown(f"**🤖 Bot:** {msg}")
-
-# Handle input
-
-def submit():
-    user_input = st.session_state.user_input
-    if user_input:
-        reply = cluster_aware_response(user_input)
-        chat_history.append(("user", user_input))
-        chat_history.append(("bot", reply))
-        st.session_state.user_input = ""
-
-st.text_input("Your question", key="user_input", on_change=submit)
+# --- Process input ---
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    bot_response = cluster_aware_response(user_input)
+    st.session_state.messages.append({"role": "bot", "content": bot_response})
+    st.rerun()  # Refresh to display new message
