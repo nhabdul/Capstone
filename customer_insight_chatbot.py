@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import time
 
 # Set page config for better layout
 st.set_page_config(
@@ -47,6 +48,7 @@ def get_theme_css(dark_mode=False):
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         font-size: 16px;
         line-height: 1.6;
+        scroll-behavior: smooth;
     }
     
     /* Message styling */
@@ -142,7 +144,7 @@ def get_theme_css(dark_mode=False):
         --text-color: #333333;
         --border-color: #e0e0e0;
         --user-color: #007bff;
-        --bot-color: #ffffff;
+        --bot-color: #333333;
         --container-bg: #f1f3f4;
         --input-bg: #ffffff;
     }
@@ -166,6 +168,7 @@ def get_theme_css(dark_mode=False):
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         font-size: 16px;
         line-height: 1.6;
+        scroll-behavior: smooth;
     }
     
     /* Message styling */
@@ -253,6 +256,45 @@ def get_theme_css(dark_mode=False):
 </style>
 """
 
+# JavaScript function for auto-scrolling
+def auto_scroll_js():
+    return """
+<script>
+function scrollToBottom() {
+    const chatContainer = document.querySelector('.chat-container');
+    if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+}
+
+// Auto-scroll after DOM updates
+setTimeout(scrollToBottom, 100);
+
+// Also scroll on window resize
+window.addEventListener('resize', scrollToBottom);
+
+// Create observer to watch for changes in chat content
+const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.addedNodes.length > 0) {
+            setTimeout(scrollToBottom, 50);
+        }
+    });
+});
+
+// Start observing when the chat container is available
+setTimeout(function() {
+    const chatContainer = document.querySelector('.chat-container');
+    if (chatContainer) {
+        observer.observe(chatContainer, {
+            childList: true,
+            subtree: true
+        });
+    }
+}, 200);
+</script>
+"""
+
 # Initialize session state
 if 'messages' not in st.session_state:
     st.session_state.messages = []
@@ -264,6 +306,8 @@ if 'last_product' not in st.session_state:
     st.session_state.last_product = None
 if 'dark_theme' not in st.session_state:
     st.session_state.dark_theme = False
+if 'message_count' not in st.session_state:
+    st.session_state.message_count = 0
 
 # Helper function to group chat history by time
 def group_chat_history(chat_history):
@@ -304,7 +348,22 @@ st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
 # Load your data (replace with your actual data loading)
 @st.cache_data
 def load_data():
-    return pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
+    # For demonstration, creating sample data - replace with your actual data loading
+    sample_data = {
+        'Cluster': [0, 0, 1, 1, 2, 2, 3, 3] * 10,
+        'Annual_Income': [50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000] * 10,
+        'Spending_Score': [30, 40, 50, 60, 70, 80, 90, 95] * 10,
+        'Average_Order_Value': [100, 150, 200, 250, 300, 350, 400, 450] * 10,
+        'Number_of_Orders': [5, 8, 12, 15, 20, 25, 30, 35] * 10,
+        'Review_Score': [3.5, 4.0, 4.2, 4.5, 4.7, 4.8, 4.9, 5.0] * 10,
+        'Age': [25, 30, 35, 40, 45, 50, 55, 60] * 10,
+        'Device_Used': ['Mobile', 'Desktop', 'Tablet'] * 27,
+        'Preferred_Payment_Method': ['Credit Card', 'PayPal', 'Bank Transfer'] * 27,
+        'Product_Category': ['Electronics', 'Clothing', 'Books', 'Home & Garden'] * 20,
+        'Customer_Region': ['North', 'South', 'East', 'West'] * 20,
+        'Gender': ['Male', 'Female'] * 40
+    }
+    return pd.DataFrame(sample_data)
 
 # Load data
 df_clusters = load_data()
@@ -472,6 +531,7 @@ with col1:
     if st.button("🗑️ Clear History", key="clear_history"):
         st.session_state.messages = []
         st.session_state.chat_history = []
+        st.session_state.message_count = 0
         st.rerun()
     
     # Display grouped chat history
@@ -498,6 +558,7 @@ with col1:
                         if st.button("🔄", key=f"reload_{group_idx}_{i}", help="Reload this conversation"):
                             st.session_state.messages.append({"role": "user", "content": user_msg})
                             st.session_state.messages.append({"role": "assistant", "content": bot_msg})
+                            st.session_state.message_count = len(st.session_state.messages)
                             st.rerun()
                     with col_continue:
                         if st.button("➕", key=f"continue_{group_idx}_{i}", help="Continue from here"):
@@ -505,6 +566,7 @@ with col1:
                             for ts, u_msg, b_msg in chat_group[:i+1]:
                                 st.session_state.messages.append({"role": "user", "content": u_msg})
                                 st.session_state.messages.append({"role": "assistant", "content": b_msg})
+                            st.session_state.message_count = len(st.session_state.messages)
                             st.rerun()
                     
                     if i < len(chat_group) - 1:
@@ -536,10 +598,13 @@ with col2:
     
     # Display everything inside the bordered container
     st.markdown(f'''
-    <div class="chat-container">
+    <div class="chat-container" id="chat-container-{st.session_state.message_count}">
         {"".join(chat_content)}
     </div>
     ''', unsafe_allow_html=True)
+    
+    # Add auto-scroll JavaScript
+    st.markdown(auto_scroll_js(), unsafe_allow_html=True)
     
     # Input area with custom styling - seamlessly connected to chat container
     st.markdown('''
@@ -596,6 +661,9 @@ if submit_button and user_input:
     
     # Add bot response to chat
     st.session_state.messages.append({"role": "assistant", "content": bot_response})
+    
+    # Update message count for auto-scroll trigger
+    st.session_state.message_count = len(st.session_state.messages)
     
     # Add to chat history with timestamp
     timestamp = datetime.now().strftime("%H:%M")
