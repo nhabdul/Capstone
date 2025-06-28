@@ -1,24 +1,12 @@
 import streamlit as st
 import pandas as pd
-import datetime
 
-# Load dataset
+# --- Load Data ---
 @st.cache_data
 def load_data():
     return pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
 
 df_clusters = load_data()
-
-# Auto-generate today's topic
-today = datetime.datetime.now().strftime("%d %B %Y")
-if "topics" not in st.session_state:
-    st.session_state.topics = {today: []}
-if "active_topic" not in st.session_state:
-    st.session_state.active_topic = today
-if "last_cluster" not in st.session_state:
-    st.session_state.last_cluster = None
-if "last_product" not in st.session_state:
-    st.session_state.last_product = None
 
 # --- Helper Functions ---
 def get_cluster_info(cluster_id):
@@ -124,27 +112,36 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- Chat UI ---
-st.set_page_config(layout="wide")
-st.title("🛍️ Customer Insight Chatbot")
-st.markdown("Ask me about product segments, clusters, and spending trends.")
-
-if "chat_history" not in st.session_state:
+# --- Session State ---
+if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
+if 'last_cluster' not in st.session_state:
+    st.session_state.last_cluster = None
+if 'last_product' not in st.session_state:
+    st.session_state.last_product = None
 
-for sender, msg in st.session_state.chat_history:
-    if sender == "user":
-        st.markdown(f"**🧑 You:** {msg}")
-    else:
-        st.markdown(f"**🤖 Bot:** {msg}")
+# --- App UI ---
+st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
+st.title("🛍️ Customer Insight Chatbot")
+st.markdown("Ask me about product segments, customer clusters, or behavior insights!")
 
-user_input = st.text_input("Ask your question", key="user_input")
+# Show conversation
+st.markdown("### 💬 Chat History")
+for sender, message in st.session_state.chat_history:
+    st.markdown(f"**{sender}:** {message}")
 
-if st.button("Send") and user_input:
-    response = cluster_aware_response(user_input)
-    st.session_state.chat_history.append(("user", user_input))
-    st.session_state.chat_history.append(("bot", response))
-    
-    # ✅ Safe clearing
-    if "user_input" in st.session_state:
-        st.session_state.user_input = ""
+# Input
+with st.form("chat_form", clear_on_submit=True):
+    user_input = st.text_input("Type your question here...")
+    submitted = st.form_submit_button("Send")
+
+if submitted and user_input:
+    st.session_state.chat_history.append(("You", user_input))
+    reply = cluster_aware_response(user_input)
+    st.session_state.chat_history.append(("Bot", reply))
+
+# Clear chat button
+if st.button("🗑️ Clear Chat"):
+    st.session_state.chat_history = []
+    st.session_state.last_cluster = None
+    st.session_state.last_product = None
