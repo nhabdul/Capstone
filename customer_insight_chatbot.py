@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import streamlit.components.v1 as components
 
 # Load dataset
 @st.cache_data
@@ -8,8 +9,7 @@ def load_data():
 
 df_clusters = load_data()
 
-# --- Helper Functions ---
-
+# Helper: Get cluster details
 def get_cluster_info(cluster_id):
     subset = df_clusters[df_clusters['Cluster'] == cluster_id]
     if subset.empty:
@@ -24,7 +24,7 @@ def get_cluster_info(cluster_id):
     top_payment = subset['Preferred_Payment_Method'].mode()[0]
     top_product = subset['Product_Category'].mode()[0]
     return (
-        f"### \U0001f9e0 Cluster {cluster_id} Overview\n"
+        f"### 🧠 Cluster {cluster_id} Overview\n"
         f"- Average Income: ${avg_income:,.2f}\n"
         f"- Spending Score: {avg_spend:.1f}\n"
         f"- Avg Order Value: ${avg_order_value:.2f}\n"
@@ -49,16 +49,19 @@ def product_cluster_response(user_input):
         cluster_counts = filtered['Cluster'].value_counts().sort_values(ascending=False)
         top_cluster = cluster_counts.idxmax()
         count = cluster_counts.max()
-        st.session_state.last_cluster = top_cluster
         return (
-            f"\U0001f4a1 Customers who purchase **{matched_product}** the most are in **Cluster {top_cluster}** "
+            f"💡 Customers who purchase **{matched_product}** the most are in **Cluster {top_cluster}** "
             f"with **{count} customers**.\n\n"
-            f"You can ask: 'Tell me more about Cluster {top_cluster}' or ask follow-up questions like their income."
+            f"You can ask: 'Tell me more about Cluster {top_cluster}' to learn about them."
         )
     return None
 
 def cluster_aware_response(user_input):
     input_lower = user_input.lower()
+    if "cluster" in input_lower:
+        for i in range(5):
+            if f"{i}" in input_lower:
+                return get_cluster_info(i)
 
     if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower:
         categories = df_clusters['Product_Category'].unique()
@@ -76,64 +79,20 @@ def cluster_aware_response(user_input):
     if "region" in input_lower:
         return "**Customer Regions:**\n- North\n- South\n- East\n- West"
 
-    if "cluster" in input_lower:
-        for i in range(5):
-            if f"{i}" in input_lower:
-                st.session_state.last_cluster = i
-                return get_cluster_info(i)
-
-    if any(word in input_lower for word in ["income", "salary", "spend", "score", "order", "review", "age"]):
-        cluster_id = st.session_state.get("last_cluster")
-        if cluster_id is None:
-            return "🤖 I need to know which cluster you're asking about first."
-        subset = df_clusters[df_clusters['Cluster'] == cluster_id]
-        if "income" in input_lower or "salary" in input_lower:
-            return f"Average income in Cluster {cluster_id} is ${subset['Annual_Income'].mean():,.2f}."
-        elif "spend" in input_lower or "score" in input_lower:
-            return f"Average spending score in Cluster {cluster_id} is {subset['Spending_Score'].mean():.2f}."
-        elif "order" in input_lower:
-            return f"Average number of orders in Cluster {cluster_id} is {subset['Number_of_Orders'].mean():.2f}."
-        elif "review" in input_lower:
-            return f"Average review score in Cluster {cluster_id} is {subset['Review_Score'].mean():.2f}."
-        elif "age" in input_lower:
-            return f"Average age in Cluster {cluster_id} is {subset['Age'].mean():.2f} years."
-
     product_response = product_cluster_response(user_input)
     if product_response:
         return product_response
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product or cluster."
 
-# --- Streamlit Layout ---
+# Sidebar: chat history by topic
 st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
-st.title("🛍️ Customer Insight Chatbot")
-st.markdown("Ask anything about clusters, products, income, or devices.")
-
-# Scrollable chat container with fixed input
-st.markdown(
-    """
-    <style>
-    .chat-box {
-        max-height: 60vh;
-        overflow-y: auto;
-        padding: 1rem;
-        border: 1px solid #ccc;
-        background-color: #f9f9f9;
-        border-radius: 10px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# Chat memory
+st.sidebar.title("📂 Chat History")
 if "topics" not in st.session_state:
     st.session_state.topics = {"Default": []}
 if "active_topic" not in st.session_state:
     st.session_state.active_topic = "Default"
 
-# Sidebar
-st.sidebar.title("📂 Chat History")
 topic_choice = st.sidebar.radio("Choose a topic:", list(st.session_state.topics.keys()))
 if topic_choice != st.session_state.active_topic:
     st.session_state.active_topic = topic_choice
@@ -143,17 +102,45 @@ if st.sidebar.button("➕ Add Topic") and new_topic:
     st.session_state.topics[new_topic] = []
     st.session_state.active_topic = new_topic
 
-# Main chat window
+# --- Custom CSS to style chat and fix input ---
+st.markdown("""
+    <style>
+    .chat-container {
+        max-height: 65vh;
+        overflow-y: auto;
+        padding: 1rem;
+        background-color: transparent;
+        border: none;
+    }
+    .chat-bubble {
+        margin-bottom: 1rem;
+    }
+    .stTextInput > div > div > input {
+        position: fixed;
+        bottom: 1rem;
+        left: 30%;
+        width: 40%;
+        z-index: 999;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Main UI
+st.title("🛍️ Customer Insight Chatbot")
+st.markdown("Ask anything about clusters, products, income, or devices.")
+
 chat_history = st.session_state.topics[st.session_state.active_topic]
-st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
+
+# Display conversation in scrollable box
+st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
 for sender, msg in chat_history:
     if sender == "user":
-        st.markdown(f"**🧑 You:** {msg}")
+        st.markdown(f"<div class='chat-bubble'><b>🧑 You:</b> {msg}</div>", unsafe_allow_html=True)
     else:
-        st.markdown(f"**🤖 Bot:** {msg}")
+        st.markdown(f"<div class='chat-bubble'><b>🤖 Bot:</b> {msg}</div>", unsafe_allow_html=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Input + handler
+# Input field with auto-clear
 def submit():
     user_input = st.session_state.user_input
     if user_input:
@@ -163,4 +150,4 @@ def submit():
         st.session_state.topics[st.session_state.active_topic] = chat_history
         st.session_state.user_input = ""
 
-st.text_input("Your question", key="user_input", on_change=submit, placeholder="Type your question here...")
+st.text_input("", key="user_input", on_change=submit, placeholder="Type your question here...")
