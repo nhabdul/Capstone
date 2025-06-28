@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 # Load dataset
 @st.cache_data
@@ -8,11 +9,15 @@ def load_data():
 
 df_clusters = load_data()
 
-# Session state for memory
+# --- Session State ---
+today = datetime.today().strftime("%d %B %Y")
+
 if "topics" not in st.session_state:
-    st.session_state.topics = {"Default": []}
+    st.session_state.topics = {}
+if today not in st.session_state.topics:
+    st.session_state.topics[today] = []
 if "active_topic" not in st.session_state:
-    st.session_state.active_topic = "Default"
+    st.session_state.active_topic = today
 if "last_cluster" not in st.session_state:
     st.session_state.last_cluster = None
 if "last_product" not in st.session_state:
@@ -133,57 +138,26 @@ if st.sidebar.button("➕ Add Topic") and new_topic:
     st.session_state.topics[new_topic] = []
     st.session_state.active_topic = new_topic
 
-# --- Main Layout ---
-st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
-st.markdown("""
-    <style>
-        .chat-container {
-            height: calc(100vh - 140px);
-            overflow-y: auto;
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 1rem;
-            border: 1px solid #ccc;
-        }
-        .chat-entry {
-            margin-bottom: 1rem;
-        }
-        .user-msg { color: #4CAF50; }
-        .bot-msg { color: #2196F3; }
-        .stTextInput > div > input {
-            border-radius: 8px;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
+# --- Chat UI ---
 st.title("🛍️ Customer Insight Chatbot")
-st.markdown("Ask about product segments, clusters, and trends.")
+st.markdown("Ask me about product segments, clusters, and spending trends.")
 
 chat_history = st.session_state.topics[st.session_state.active_topic]
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
+# Show conversation above input
 for sender, msg in chat_history:
     if sender == "user":
-        st.markdown(f'<div class="chat-entry user-msg"><strong>🧑 You:</strong> {msg}</div>', unsafe_allow_html=True)
+        st.markdown(f"**🧑 You:** {msg}")
     else:
-        st.markdown(f'<div class="chat-entry bot-msg"><strong>🤖 Bot:</strong> {msg}</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f"**🤖 Bot:** {msg}")
 
-# --- Input Section ---
-input_col, send_col = st.columns([8, 1])
+# Input field with auto-clear
+def submit():
+    user_input = st.session_state.user_input
+    if user_input:
+        reply = cluster_aware_response(user_input)
+        chat_history.append(("user", user_input))
+        chat_history.append(("bot", reply))
+        st.session_state.user_input = ""
 
-with input_col:
-    st.text_input(
-        "Your message",
-        key="user_input",
-        label_visibility="collapsed",
-        placeholder="Type your question here..."
-    )
-
-with send_col:
-    if st.button("📤", help="Send your message"):
-        user_input = st.session_state.user_input
-        if user_input:
-            reply = cluster_aware_response(user_input)
-            chat_history.append(("user", user_input))
-            chat_history.append(("bot", reply))
-            st.session_state.user_input = ""
+st.text_input("Your question", key="user_input", on_change=submit)
