@@ -96,15 +96,18 @@ def follow_up_on_last_cluster(user_input):
 def cluster_aware_response(user_input):
     input_lower = user_input.lower()
 
+    # Ask for cluster info
     if "cluster" in input_lower:
-        for i in range(10):
+        for i in range(10):  # supports clusters 0–9
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
 
+    # Ask for available product categories
     if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower:
         categories = df_clusters['Product_Category'].unique()
         return "**Available Product Categories:**\n" + "\n".join(f"- {c}" for c in sorted(categories))
 
+    # Other general questions
     if "payment" in input_lower:
         return "**Top Payment Methods:**\n- Credit Card\n- Debit Card\n- PayPal"
     if "device" in input_lower:
@@ -124,7 +127,7 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- Styling ---
+# --- UI Styling ---
 st.set_page_config(layout="wide")
 st.markdown("""
     <style>
@@ -136,43 +139,28 @@ st.markdown("""
             border-radius: 10px;
             background-color: rgba(255, 255, 255, 0.05);
         }
-        .chatbox-wrapper {
-            position: fixed;
-            bottom: 1.5rem;
-            width: 100%;
+        .chat-input {
             display: flex;
-            justify-content: center;
+            align-items: center;
+            padding-top: 1rem;
         }
-        .chatbox {
-            display: flex;
-            width: 60%;
-            border: 1px solid #ccc;
+        .chat-input .stTextInput {
+            flex-grow: 1;
             border-radius: 12px;
-            overflow: hidden;
-            background-color: #2f2f2f;
         }
-        .chatbox input {
-            flex: 1;
-            padding: 0.75rem;
-            font-size: 16px;
-            color: white;
-            background-color: transparent;
-            border: none;
-            outline: none;
-        }
-        .chatbox button {
+        .send-button button {
+            margin-left: 0.5rem;
+            padding: 0.5rem 1rem;
             background-color: #4CAF50;
-            border: none;
             color: white;
-            padding: 0 1.2rem;
+            border: none;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 18px;
-            border-left: 1px solid #ccc;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Sidebar ---
+# --- Sidebar Chat History ---
 st.sidebar.title("📂 Chat History")
 topic_choice = st.sidebar.radio("Choose a topic:", list(st.session_state.topics.keys()))
 if topic_choice != st.session_state.active_topic:
@@ -183,12 +171,13 @@ if st.sidebar.button("➕ Add Topic") and new_topic:
     st.session_state.topics[new_topic] = []
     st.session_state.active_topic = new_topic
 
-# --- Title and Conversation ---
+# --- Title and Chat Section ---
 st.title("🛍️ Customer Insight Chatbot")
 st.markdown("Ask me about product segments, clusters, and spending trends.")
 
 chat_history = st.session_state.topics[st.session_state.active_topic]
 
+# Show conversation inside scrollable div
 with st.container():
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
     for sender, msg in chat_history:
@@ -198,22 +187,14 @@ with st.container():
             st.markdown(f"**🤖 Bot:** {msg}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Input Box ---
-st.markdown("""
-    <div class="chatbox-wrapper">
-        <form action="" method="POST">
-            <div class="chatbox">
-                <input name="user_input" placeholder="Type your question here..." />
-                <button type="submit">📤</button>
-            </div>
-        </form>
-    </div>
-""", unsafe_allow_html=True)
-
-user_input = st.experimental_get_query_params().get("user_input", [""])[0]
-
-if user_input:
-    reply = cluster_aware_response(user_input)
-    chat_history.append(("user", user_input))
-    chat_history.append(("bot", reply))
-    st.experimental_set_query_params(user_input="")
+# Input + Send Button
+col1, col2 = st.columns([10, 1])
+with col1:
+    user_input = st.text_input("Type your question here...", key="user_input")
+with col2:
+    if st.button("📤", key="send_button"):
+        if user_input:
+            reply = cluster_aware_response(user_input)
+            chat_history.append(("user", user_input))
+            chat_history.append(("bot", reply))
+            st.session_state.user_input = ""
