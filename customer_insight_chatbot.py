@@ -87,11 +87,6 @@ def get_theme_css(dark_mode=False):
         background-color: var(--input-bg);
     }
     
-    /* Remove spacing between containers */
-    .element-container:has(.chat-container) + .element-container:has(.input-container) {
-        margin-top: 0 !important;
-    }
-    
     /* Sidebar styling */
     .sidebar-header {
         font-size: 18px;
@@ -207,11 +202,6 @@ def get_theme_css(dark_mode=False):
         background-color: var(--input-bg);
     }
     
-    /* Remove spacing between containers */
-    .element-container:has(.chat-container) + .element-container:has(.input-container) {
-        margin-top: 0 !important;
-    }
-    
     /* Sidebar styling */
     .sidebar-header {
         font-size: 18px;
@@ -257,54 +247,6 @@ def get_theme_css(dark_mode=False):
 </style>
 """
 
-# Alternative auto-scroll using Streamlit's built-in method
-def add_scroll_to_bottom():
-    st.markdown(f"""
-    <script>
-    // Wait for Streamlit to fully render, then scroll
-    window.addEventListener('load', function() {{
-        setTimeout(function() {{
-            const chatContainer = document.querySelector('.chat-container');
-            if (chatContainer) {{
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }}
-        }}, 100);
-    }});
-    
-    // Also try after Streamlit updates
-    document.addEventListener('DOMContentLoaded', function() {{
-        setTimeout(function() {{
-            const chatContainer = document.querySelector('.chat-container');
-            if (chatContainer) {{
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }}
-        }}, 100);
-    }});
-    </script>
-    
-    <script>
-    // Force immediate scroll - Streamlit specific
-    setTimeout(function() {{
-        const containers = document.querySelectorAll('.chat-container');
-        containers.forEach(container => {{
-            container.scrollTop = container.scrollHeight;
-        }});
-    }}, 10);
-    
-    // Aggressive scrolling approach
-    let scrollCount = 0;
-    const scrollTimer = setInterval(function() {{
-        const chatContainer = document.querySelector('.chat-container');
-        if (chatContainer && scrollCount < 10) {{
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            scrollCount++;
-        }} else {{
-            clearInterval(scrollTimer);
-        }}
-    }}, 100);
-    </script>
-    """, unsafe_allow_html=True)
-
 # Initialize session state
 if 'messages' not in st.session_state:
     st.session_state.messages = []
@@ -316,8 +258,23 @@ if 'last_product' not in st.session_state:
     st.session_state.last_product = None
 if 'dark_theme' not in st.session_state:
     st.session_state.dark_theme = False
-if 'message_count' not in st.session_state:
-    st.session_state.message_count = 0
+if 'df_clusters' not in st.session_state:
+    st.session_state.df_clusters = None
+if 'scroll_trigger' not in st.session_state:
+    st.session_state.scroll_trigger = 0
+
+# Apply theme CSS
+st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
+
+# Load CSV data
+@st.cache_data
+def load_csv_data(file):
+    """Load data from uploaded CSV file"""
+    try:
+        df = pd.read_csv(file)
+        return df, None
+    except Exception as e:
+        return None, str(e)
 
 # Helper function to group chat history by time
 def group_chat_history(chat_history):
@@ -352,384 +309,360 @@ def group_chat_history(chat_history):
     
     return grouped
 
-# Apply theme CSS after session state is initialized
-st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
-
-# Load your data (replace with your actual data loading)
-@st.cache_data
-def load_data():
-    # Fixed sample data with consistent array lengths
-    n_samples = 80  # Total number of samples
+# Helper Functions for data analysis
+def get_cluster_info(cluster_id, df):
+    """Get information about a specific cluster"""
+    if 'Cluster' not in df.columns:
+        return "❌ No 'Cluster' column found in the data."
     
-    # Create base patterns
-    clusters = [0, 1, 2, 3] * (n_samples // 4)
-    incomes = np.random.normal(75000, 20000, n_samples).astype(int)
-    spending_scores = np.random.uniform(20, 100, n_samples)
-    order_values = np.random.uniform(50, 500, n_samples)
-    num_orders = np.random.randint(1, 50, n_samples)
-    review_scores = np.random.uniform(3.0, 5.0, n_samples)
-    ages = np.random.randint(18, 80, n_samples)
-    
-    # Create categorical data with proper cycling
-    devices = ['Mobile', 'Desktop', 'Tablet']
-    payments = ['Credit Card', 'PayPal', 'Bank Transfer']
-    products = ['Electronics', 'Clothing', 'Books', 'Home & Garden']
-    regions = ['North', 'South', 'East', 'West']
-    genders = ['Male', 'Female']
-    
-    sample_data = {
-        'Cluster': clusters,
-        'Annual_Income': incomes,
-        'Spending_Score': spending_scores,
-        'Average_Order_Value': order_values,
-        'Number_of_Orders': num_orders,
-        'Review_Score': review_scores,
-        'Age': ages,
-        'Device_Used': [devices[i % len(devices)] for i in range(n_samples)],
-        'Preferred_Payment_Method': [payments[i % len(payments)] for i in range(n_samples)],
-        'Product_Category': [products[i % len(products)] for i in range(n_samples)],
-        'Customer_Region': [regions[i % len(regions)] for i in range(n_samples)],
-        'Gender': [genders[i % len(genders)] for i in range(n_samples)]
-    }
-    
-    return pd.DataFrame(sample_data)
-
-# Load data
-df_clusters = load_data()
-
-# --- Helper Functions (from your provided code) ---
-def get_cluster_info(cluster_id):
-    subset = df_clusters[df_clusters['Cluster'] == cluster_id]
+    subset = df[df['Cluster'] == cluster_id]
     if subset.empty:
-        return "❌ That cluster doesn't exist."
+        return f"❌ Cluster {cluster_id} doesn't exist in the data."
+    
     st.session_state.last_cluster = cluster_id
-    avg_income = subset['Annual_Income'].mean()
-    avg_spend = subset['Spending_Score'].mean()
-    avg_order_value = subset['Average_Order_Value'].mean()
-    avg_orders = subset['Number_of_Orders'].mean()
-    avg_review = subset['Review_Score'].mean()
-    avg_age = subset['Age'].mean()
-    top_device = subset['Device_Used'].mode()[0]
-    top_payment = subset['Preferred_Payment_Method'].mode()[0]
-    top_product = subset['Product_Category'].mode()[0]
-    return (
-        f"### 🧠 Cluster {cluster_id} Overview\n\n"
-        f"• Average Income: ${avg_income:,.2f}\n\n"
-        f"• Spending Score: {avg_spend:.1f}\n\n"
-        f"• Avg Order Value: ${avg_order_value:.2f}\n\n"
-        f"• Orders per Customer: {avg_orders:.2f}\n\n"
-        f"• Average Review Score: {avg_review:.2f}\n\n"
-        f"• Age: {avg_age:.1f} years\n\n"
-        f"• Most used payment method: **{top_payment}**\n\n"
-        f"• Most used device: **{top_device}**\n\n"
-        f"• Common product: **{top_product}**"
-    )
+    
+    # Build response based on available columns
+    response = f"### 🧠 Cluster {cluster_id} Overview\n\n"
+    
+    # Numeric columns to analyze
+    numeric_cols = subset.select_dtypes(include=[np.number]).columns
+    for col in numeric_cols:
+        if col != 'Cluster':
+            avg_val = subset[col].mean()
+            if col.lower() in ['income', 'salary', 'revenue', 'value', 'price']:
+                response += f"• Average {col}: ${avg_val:,.2f}\n\n"
+            else:
+                response += f"• Average {col}: {avg_val:.2f}\n\n"
+    
+    # Categorical columns to analyze
+    categorical_cols = subset.select_dtypes(include=['object']).columns
+    for col in categorical_cols:
+        if len(subset[col].unique()) > 0:
+            top_value = subset[col].mode().iloc[0] if len(subset[col].mode()) > 0 else "N/A"
+            response += f"• Most common {col}: **{top_value}**\n\n"
+    
+    return response
 
-def product_cluster_response(user_input):
+def product_cluster_response(user_input, df):
+    """Find which cluster buys a specific product most"""
+    if 'Product_Category' not in df.columns:
+        return None
+    
     user_input_lower = user_input.lower()
-    product_categories = df_clusters['Product_Category'].unique()
+    product_categories = df['Product_Category'].unique()
     matched_product = None
+    
     for product in product_categories:
         if product.lower() in user_input_lower:
             matched_product = product
             break
-    if matched_product:
-        filtered = df_clusters[df_clusters['Product_Category'] == matched_product]
-        cluster_counts = filtered['Cluster'].value_counts().sort_values(ascending=False)
-        top_cluster = cluster_counts.idxmax()
-        count = cluster_counts.max()
-        st.session_state.last_cluster = top_cluster
-        st.session_state.last_product = matched_product
-        return (
-            f"💡 Customers who purchase **{matched_product}** the most are in **Cluster {top_cluster}** "
-            f"with **{count} customers**.\n\n"
-            f"You can ask: 'Tell me more about Cluster {top_cluster}' to learn about them."
-        )
+    
+    if matched_product and 'Cluster' in df.columns:
+        filtered = df[df['Product_Category'] == matched_product]
+        if not filtered.empty:
+            cluster_counts = filtered['Cluster'].value_counts().sort_values(ascending=False)
+            top_cluster = cluster_counts.idxmax()
+            count = cluster_counts.max()
+            st.session_state.last_cluster = top_cluster
+            st.session_state.last_product = matched_product
+            return (
+                f"💡 Customers who purchase **{matched_product}** the most are in **Cluster {top_cluster}** "
+                f"with **{count} customers**.\n\n"
+                f"You can ask: 'Tell me more about Cluster {top_cluster}' to learn about them."
+            )
     return None
 
-def follow_up_on_last_cluster(user_input):
+def follow_up_on_last_cluster(user_input, df):
+    """Handle follow-up questions about the last mentioned cluster"""
     msg = user_input.lower()
     cluster_id = st.session_state.last_cluster
-    if cluster_id is None:
+    if cluster_id is None or 'Cluster' not in df.columns:
         return None
-    subset = df_clusters[df_clusters["Cluster"] == cluster_id]
-
-    if "income" in msg or "salary" in msg:
-        return f"• Average income in Cluster {cluster_id} is ${subset['Annual_Income'].mean():,.2f}."
-    elif "spend" in msg:
-        return f"• Average spending score in Cluster {cluster_id} is {subset['Spending_Score'].mean():.2f}."
-    elif "order" in msg:
-        return f"• Average number of orders in Cluster {cluster_id} is {subset['Number_of_Orders'].mean():.2f}."
-    elif "review" in msg:
-        return f"• Average review score in Cluster {cluster_id} is {subset['Review_Score'].mean():.2f}."
-    elif "device" in msg:
-        return f"• Most common device in Cluster {cluster_id} is **{subset['Device_Used'].mode().iloc[0]}**."
-    elif "region" in msg:
-        return f"• Most customers in Cluster {cluster_id} are from **{subset['Customer_Region'].mode().iloc[0]}**."
-    elif "gender" in msg:
-        return f"• Most customers in Cluster {cluster_id} are **{subset['Gender'].mode().iloc[0]}**."
+    
+    subset = df[df["Cluster"] == cluster_id]
+    if subset.empty:
+        return None
+    
+    # Check for specific column mentions
+    for col in df.columns:
+        if col.lower() in msg and col != 'Cluster':
+            if df[col].dtype in ['int64', 'float64']:
+                avg_val = subset[col].mean()
+                if col.lower() in ['income', 'salary', 'revenue', 'value', 'price']:
+                    return f"• Average {col} in Cluster {cluster_id} is ${avg_val:,.2f}."
+                else:
+                    return f"• Average {col} in Cluster {cluster_id} is {avg_val:.2f}."
+            else:
+                if len(subset[col].mode()) > 0:
+                    top_value = subset[col].mode().iloc[0]
+                    return f"• Most common {col} in Cluster {cluster_id} is **{top_value}**."
+    
     return None
 
-def cluster_aware_response(user_input):
+def cluster_aware_response(user_input, df):
+    """Main response function that handles various user queries"""
+    if df is None:
+        return "❌ Please upload a CSV file first to analyze customer data."
+    
     input_lower = user_input.lower()
 
     # Handle cluster queries
     if "cluster" in input_lower:
+        if 'Cluster' not in df.columns:
+            return "❌ No 'Cluster' column found in your data."
+        
         # Check for specific cluster numbers
-        for i in range(4):  # Support clusters 0-3
-            if f"{i}" in input_lower:
-                return get_cluster_info(i)
+        unique_clusters = sorted(df['Cluster'].unique())
+        for cluster_id in unique_clusters:
+            if str(cluster_id) in input_lower:
+                return get_cluster_info(cluster_id, df)
         
         # If just "cluster" or "clusters" is mentioned, show all available clusters
         if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
             cluster_info = "**Available Clusters:**\n\n"
-            for i in range(4):
-                cluster_info += f"• Cluster {i}\n\n"
-            
+            for cluster_id in unique_clusters:
+                cluster_info += f"• Cluster {cluster_id}\n\n"
             return cluster_info
 
-    if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower or "show me product categories" in input_lower:
-        categories = sorted(df_clusters['Product_Category'].unique())
-        category_info = "**Available Product Categories:**\n\n"
-        
-        for category in categories:
-            category_info += f"• {category}\n\n"
-        
-        return category_info
+    # Handle column-specific queries
+    if "columns" in input_lower or "what data" in input_lower or "available data" in input_lower:
+        cols_info = "**Available Data Columns:**\n\n"
+        for col in df.columns:
+            cols_info += f"• {col}\n\n"
+        return cols_info
 
-    if "payment" in input_lower or "what payment methods are available" in input_lower:
-        payments = sorted(df_clusters['Preferred_Payment_Method'].unique())
-        payment_info = "**Available Payment Methods:**\n\n"
-        
-        for payment in payments:
-            payment_info += f"• {payment}\n\n"
-        
-        return payment_info
-    
-    if "device" in input_lower or "what devices do customers use" in input_lower:
-        devices = sorted(df_clusters['Device_Used'].unique())
-        device_info = "**Customer Devices:**\n\n"
-        
-        for device in devices:
-            device_info += f"• {device}\n\n"
-        
-        return device_info
-    
-    if "delivery" in input_lower:
-        return "**Preferred Delivery Options:**\n\n• **Express** - Fast delivery (1-2 days)\n\n• **Standard** - Regular delivery (3-5 days)\n\n• **Scheduled** - Choose your delivery time"
-    
-    if "region" in input_lower:
-        regions = sorted(df_clusters['Customer_Region'].unique())
-        region_info = "**Customer Regions:**\n\n"
-        
-        for region in regions:
-            region_info += f"• {region}\n\n"
-        
-        return region_info
-
-    product_response = product_cluster_response(user_input)
+    # Handle product queries
+    product_response = product_cluster_response(user_input, df)
     if product_response:
         return product_response
 
-    follow_up = follow_up_on_last_cluster(user_input)
+    # Handle follow-up questions
+    follow_up = follow_up_on_last_cluster(user_input, df)
     if follow_up:
         return follow_up
 
-    return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
+    # Generic data exploration
+    if any(word in input_lower for word in ["summary", "overview", "describe", "info"]):
+        summary_info = f"**Data Summary:**\n\n"
+        summary_info += f"• Total records: {len(df)}\n\n"
+        summary_info += f"• Columns: {len(df.columns)}\n\n"
+        
+        if 'Cluster' in df.columns:
+            summary_info += f"• Unique clusters: {df['Cluster'].nunique()}\n\n"
+        
+        return summary_info
+
+    return "🤖 I can help you analyze your customer data. Try asking about clusters, specific columns, or data summaries. Upload your CSV file if you haven't already!"
 
 # --- Main App Layout ---
 # Add theme toggle
 col_title, col_theme = st.columns([4, 1])
 with col_title:
     st.title("Customer Insights Chatbot")
-    st.markdown("Ask me about customer clusters, products, and spending patterns!")
+    st.markdown("Upload your CSV file and ask me about customer clusters, products, and patterns!")
 with col_theme:
     st.write("")  # Add some spacing
     if st.button("🌓 Toggle Theme", key="theme_toggle"):
         st.session_state.dark_theme = not st.session_state.dark_theme
         st.rerun()
 
-# Create layout with sidebar and main content
-col1, col2 = st.columns([1, 3])
-
-# Sidebar for chat history
-with col1:
-    st.markdown('<div class="sidebar-header">💬 Chat History</div>', unsafe_allow_html=True)
+# File upload section
+if st.session_state.df_clusters is None:
+    st.markdown("### 📁 Upload Your Customer Data")
+    uploaded_file = st.file_uploader(
+        "Choose a CSV file", 
+        type="csv",
+        help="Upload a CSV file containing customer data with columns like 'Cluster', product categories, etc."
+    )
     
-    # Add clear history button
-    if st.button("🗑️ Clear History", key="clear_history"):
-        st.session_state.messages = []
-        st.session_state.chat_history = []
-        st.session_state.message_count = 0
-        st.rerun()
-    
-    # Display grouped chat history
-    if st.session_state.chat_history:
-        grouped_history = group_chat_history(st.session_state.chat_history)
-        
-        for group_idx, chat_group in enumerate(reversed(grouped_history)):
-            # Get time range for the group
-            start_time = chat_group[0][0]
-            end_time = chat_group[-1][0]
-            
-            if len(chat_group) == 1:
-                group_label = f"💬 {start_time}"
-            else:
-                group_label = f"💬 {start_time} - {end_time} ({len(chat_group)} chats)"
-            
-            with st.expander(group_label, expanded=False):
-                for i, (timestamp, user_msg, bot_msg) in enumerate(chat_group):
-                    st.markdown(f"**[{timestamp}] You:** {user_msg[:40]}...")
-                    st.markdown(f"**Bot:** {bot_msg[:40]}...")
-                    
-                    col_reload, col_continue = st.columns(2)
-                    with col_reload:
-                        if st.button("🔄", key=f"reload_{group_idx}_{i}", help="Reload this conversation"):
-                            st.session_state.messages.append({"role": "user", "content": user_msg})
-                            st.session_state.messages.append({"role": "assistant", "content": bot_msg})
-                            st.session_state.message_count = len(st.session_state.messages)
-                            st.rerun()
-                    with col_continue:
-                        if st.button("➕", key=f"continue_{group_idx}_{i}", help="Continue from here"):
-                            # Load all conversations up to this point
-                            for ts, u_msg, b_msg in chat_group[:i+1]:
-                                st.session_state.messages.append({"role": "user", "content": u_msg})
-                                st.session_state.messages.append({"role": "assistant", "content": b_msg})
-                            st.session_state.message_count = len(st.session_state.messages)
-                            st.rerun()
-                    
-                    if i < len(chat_group) - 1:
-                        st.markdown("---")
-
-# Main chat area
-with col2:
-    # Chat container with custom styling
-    chat_content = []
-    
-    # Build chat content
-    if not st.session_state.messages:
-        chat_content.append("""
-            Hello! I'm your Customer Insights Assistant. I can help you explore customer data and clusters.
-            
-            Try asking me about:
-            • Specific clusters (e.g., "Tell me about cluster 1")
-            • Product categories and customer preferences
-            • Payment methods and device usage
-            • Customer demographics and behavior
-        """)
-    
-    # Add all messages to chat content
-    for message in st.session_state.messages:
-        if message["role"] == "user":
-            chat_content.append(f'<div class="user-message">{message["content"]}</div>')
+    if uploaded_file is not None:
+        df, error = load_csv_data(uploaded_file)
+        if error:
+            st.error(f"Error loading CSV: {error}")
         else:
-            chat_content.append(f'<div class="bot-message">{message["content"]}</div>')
+            st.session_state.df_clusters = df
+            st.success(f"✅ CSV loaded successfully! {len(df)} rows, {len(df.columns)} columns")
+            st.markdown("**Columns found:**")
+            st.write(", ".join(df.columns))
+            st.rerun()
+
+# Only show chat interface if data is loaded
+if st.session_state.df_clusters is not None:
+    df = st.session_state.df_clusters
     
-    # Display everything inside the bordered container with unique ID
-    st.markdown(f'''
-    <div class="chat-container" id="chat-container-{st.session_state.message_count}">
-        {"".join(chat_content)}
-        <div id="scroll-anchor-{st.session_state.message_count}"></div>
-    </div>
-    ''', unsafe_allow_html=True)
-    
-    # Add auto-scroll JavaScript - Multiple approaches for reliability
-    add_scroll_to_bottom()
-    
-    # Additional scroll trigger based on message count
-    if st.session_state.message_count > 0:
+    # Create layout with sidebar and main content
+    col1, col2 = st.columns([1, 3])
+
+    # Sidebar for chat history
+    with col1:
+        st.markdown('<div class="sidebar-header">💬 Chat History</div>', unsafe_allow_html=True)
+        
+        # Add clear history button
+        if st.button("🗑️ Clear History", key="clear_history"):
+            st.session_state.messages = []
+            st.session_state.chat_history = []
+            st.session_state.scroll_trigger += 1
+            st.rerun()
+        
+        # Display grouped chat history
+        if st.session_state.chat_history:
+            grouped_history = group_chat_history(st.session_state.chat_history)
+            
+            for group_idx, chat_group in enumerate(reversed(grouped_history)):
+                # Get time range for the group
+                start_time = chat_group[0][0]
+                end_time = chat_group[-1][0]
+                
+                if len(chat_group) == 1:
+                    group_label = f"💬 {start_time}"
+                else:
+                    group_label = f"💬 {start_time} - {end_time} ({len(chat_group)} chats)"
+                
+                with st.expander(group_label, expanded=False):
+                    for i, (timestamp, user_msg, bot_msg) in enumerate(chat_group):
+                        st.markdown(f"**[{timestamp}] You:** {user_msg[:40]}...")
+                        st.markdown(f"**Bot:** {bot_msg[:40]}...")
+                        
+                        col_reload, col_continue = st.columns(2)
+                        with col_reload:
+                            if st.button("🔄", key=f"reload_{group_idx}_{i}", help="Reload this conversation"):
+                                st.session_state.messages.append({"role": "user", "content": user_msg})
+                                st.session_state.messages.append({"role": "assistant", "content": bot_msg})
+                                st.session_state.scroll_trigger += 1
+                                st.rerun()
+                        with col_continue:
+                            if st.button("➕", key=f"continue_{group_idx}_{i}", help="Continue from here"):
+                                # Load all conversations up to this point
+                                for ts, u_msg, b_msg in chat_group[:i+1]:
+                                    st.session_state.messages.append({"role": "user", "content": u_msg})
+                                    st.session_state.messages.append({"role": "assistant", "content": b_msg})
+                                st.session_state.scroll_trigger += 1
+                                st.rerun()
+                        
+                        if i < len(chat_group) - 1:
+                            st.markdown("---")
+
+    # Main chat area
+    with col2:
+        # Chat container with custom styling
+        chat_content = []
+        
+        # Build chat content
+        if not st.session_state.messages:
+            chat_content.append(f"""
+                Hello! I'm your Customer Insights Assistant. Your data has been loaded with {len(df)} rows and {len(df.columns)} columns.
+                
+                Try asking me about:
+                • Specific clusters (e.g., "Tell me about cluster 1")
+                • Available data columns
+                • Data summaries and overviews
+                • Product categories and customer preferences
+            """)
+        
+        # Add all messages to chat content
+        for message in st.session_state.messages:
+            if message["role"] == "user":
+                chat_content.append(f'<div class="user-message">{message["content"]}</div>')
+            else:
+                chat_content.append(f'<div class="bot-message">{message["content"]}</div>')
+        
+        # Display chat container
+        chat_html = f'''
+        <div class="chat-container" id="chat-container">
+            {"".join(chat_content)}
+        </div>
+        '''
+        st.markdown(chat_html, unsafe_allow_html=True)
+        
+        # Auto-scroll script - simplified and more reliable
         st.markdown(f"""
         <script>
-        // Message-count triggered scroll
-        (function() {{
-            const messageCount = {st.session_state.message_count};
-            setTimeout(function() {{
-                const chatContainer = document.querySelector('.chat-container');
-                if (chatContainer) {{
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                    console.log('Scrolled for message count:', messageCount);
-                }}
-            }}, 50);
-        }})();
+        // Auto-scroll function
+        function scrollToBottom() {{
+            const chatContainer = document.getElementById('chat-container');
+            if (chatContainer) {{
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }}
+        }}
+        
+        // Scroll immediately
+        scrollToBottom();
+        
+        // Scroll after short delay for dynamic content
+        setTimeout(scrollToBottom, 100);
+        setTimeout(scrollToBottom, 300);
+        
+        // Trigger: {st.session_state.scroll_trigger}
         </script>
         """, unsafe_allow_html=True)
-    
-    # Input area with custom styling - seamlessly connected to chat container
-    st.markdown('''
-    <div class="input-container">
-    </div>
-    ''', unsafe_allow_html=True)
-    
-    # Create input form that responds to Enter key
-    with st.form(key="chat_form", clear_on_submit=True):
-        user_input = st.text_input(
-            "Type your message here...",
-            key="user_input",
-            placeholder="Ask me about clusters, products, or customer data...",
-            label_visibility="collapsed"
-        )
         
-        col_send, col_examples = st.columns([1, 4])
-        with col_send:
-            submit_button = st.form_submit_button("Send 📤", use_container_width=True)
-        with col_examples:
-            st.markdown("*Press Enter to send*")
-    
-    # Quick action buttons
-    st.markdown("**Quick Actions:**")
-    btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
-    
-    with btn_col1:
-        if st.button("🧠 Clusters", key="clusters"):
-            user_input = "Show me available clusters"
-            submit_button = True
-    
-    with btn_col2:
-        if st.button("🛍️ Products", key="products"):
-            user_input = "Show me product categories"
-            submit_button = True
-    
-    with btn_col3:
-        if st.button("💳 Payments", key="payments"):
-            user_input = "What payment methods are available?"
-            submit_button = True
-    
-    with btn_col4:
-        if st.button("📱 Devices", key="devices"):
-            user_input = "What devices do customers use?"
-            submit_button = True
+        # Input area
+        st.markdown('<div class="input-container"></div>', unsafe_allow_html=True)
+        
+        # Create input form
+        with st.form(key="chat_form", clear_on_submit=True):
+            user_input = st.text_input(
+                "Type your message here...",
+                key="user_input",
+                placeholder="Ask me about your customer data...",
+                label_visibility="collapsed"
+            )
+            
+            col_send, col_examples = st.columns([1, 4])
+            with col_send:
+                submit_button = st.form_submit_button("Send 📤", use_container_width=True)
+            with col_examples:
+                st.markdown("*Press Enter to send*")
+        
+        # Quick action buttons based on available data
+        st.markdown("**Quick Actions:**")
+        btn_cols = st.columns(4)
+        
+        quick_actions = [
+            ("🧠 Clusters", "Show me available clusters"),
+            ("📊 Summary", "Give me a data summary"),
+            ("📋 Columns", "What data columns are available?"),
+            ("🔍 Overview", "Describe the data")
+        ]
+        
+        for idx, (label, query) in enumerate(quick_actions):
+            with btn_cols[idx]:
+                if st.button(label, key=f"action_{idx}"):
+                    user_input = query
+                    submit_button = True
 
-# Process user input
-if submit_button and user_input:
-    # Add user message to chat
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    
-    # Get bot response using your helper function
-    bot_response = cluster_aware_response(user_input)
-    
-    # Add bot response to chat
-    st.session_state.messages.append({"role": "assistant", "content": bot_response})
-    
-    # Update message count for auto-scroll trigger
-    st.session_state.message_count = len(st.session_state.messages)
-    
-    # Add to chat history with timestamp
-    timestamp = datetime.now().strftime("%H:%M")
-    st.session_state.chat_history.append((timestamp, user_input, bot_response))
-    
-    # Keep only last 20 conversations in history
-    if len(st.session_state.chat_history) > 20:
-        st.session_state.chat_history = st.session_state.chat_history[-20:]
-    
-    # Rerun to update the display
-    st.rerun()
+        # Process user input
+        if submit_button and user_input:
+            # Add user message to chat
+            st.session_state.messages.append({"role": "user", "content": user_input})
+            
+            # Get bot response
+            bot_response = cluster_aware_response(user_input, df)
+            
+            # Add bot response to chat
+            st.session_state.messages.append({"role": "assistant", "content": bot_response})
+            
+            # Update scroll trigger
+            st.session_state.scroll_trigger += 1
+            
+            # Add to chat history with timestamp
+            timestamp = datetime.now().strftime("%H:%M")
+            st.session_state.chat_history.append((timestamp, user_input, bot_response))
+            
+            # Keep only last 20 conversations in history
+            if len(st.session_state.chat_history) > 20:
+                st.session_state.chat_history = st.session_state.chat_history[-20:]
+            
+            # Rerun to update the display
+            st.rerun()
 
 # Footer with instructions
 st.markdown("---")
 st.markdown("""
 **Instructions:**
+- Upload a CSV file with customer data (should include columns like 'Cluster', product categories, etc.)
 - Type your question and press Enter or click Send
 - Use the sidebar to view and reload previous conversations
 - Try the quick action buttons for common queries
-- Ask about specific clusters (0-3), products, or customer behavior
+- Ask about specific clusters, data summaries, or column information
 """)
