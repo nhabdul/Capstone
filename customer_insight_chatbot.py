@@ -35,10 +35,11 @@ def get_theme_css(dark_mode=False):
     /* Chat container styling */
     .chat-container {
         border: 2px solid var(--border-color);
-        border-radius: 10px;
+        border-radius: 10px 10px 0 0;
         padding: 20px;
         background-color: transparent;
         margin: 0;
+        margin-bottom: 0;
         min-height: 400px;
         max-height: 600px;
         overflow-y: auto;
@@ -66,10 +67,17 @@ def get_theme_css(dark_mode=False):
     /* Input area styling */
     .input-container {
         border: 2px solid var(--border-color);
-        border-radius: 10px;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
         padding: 10px;
         margin: 0;
+        margin-top: 0;
         background-color: var(--input-bg);
+    }
+    
+    /* Remove spacing between containers */
+    .element-container:has(.chat-container) + .element-container:has(.input-container) {
+        margin-top: 0 !important;
     }
     
     /* Sidebar styling */
@@ -99,6 +107,12 @@ def get_theme_css(dark_mode=False):
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
+    /* Remove default streamlit spacing */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+    }
+    
     /* Responsive design */
     @media (max-width: 768px) {
         .user-message, .bot-message {
@@ -125,10 +139,11 @@ def get_theme_css(dark_mode=False):
     /* Chat container styling */
     .chat-container {
         border: 2px solid var(--border-color);
-        border-radius: 10px;
+        border-radius: 10px 10px 0 0;
         padding: 20px;
         background-color: transparent;
         margin: 0;
+        margin-bottom: 0;
         min-height: 400px;
         max-height: 600px;
         overflow-y: auto;
@@ -156,10 +171,17 @@ def get_theme_css(dark_mode=False):
     /* Input area styling */
     .input-container {
         border: 2px solid var(--user-color);
-        border-radius: 10px;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
         padding: 10px;
         margin: 0;
+        margin-top: 0;
         background-color: var(--input-bg);
+    }
+    
+    /* Remove spacing between containers */
+    .element-container:has(.chat-container) + .element-container:has(.input-container) {
+        margin-top: 0 !important;
     }
     
     /* Sidebar styling */
@@ -188,6 +210,12 @@ def get_theme_css(dark_mode=False):
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    
+    /* Remove default streamlit spacing */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+    }
     
     /* Responsive design */
     @media (max-width: 768px) {
@@ -411,8 +439,11 @@ with col2:
     </div>
     ''', unsafe_allow_html=True)
     
-    # Input area with custom styling
-    st.markdown('<div class="input-container">', unsafe_allow_html=True)
+    # Input area with custom styling - seamlessly connected to chat container
+    st.markdown('''
+    <div class="input-container">
+    </div>
+    ''', unsafe_allow_html=True)
     
     # Create input form that responds to Enter key
     with st.form(key="chat_form", clear_on_submit=True):
@@ -452,8 +483,6 @@ with col2:
         if st.button("📱 Devices", key="devices"):
             user_input = "What devices do customers use?"
             submit_button = True
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # Process user input
 if submit_button and user_input:
