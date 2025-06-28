@@ -119,8 +119,6 @@ if 'last_cluster' not in st.session_state:
     st.session_state.last_cluster = None
 if 'last_product' not in st.session_state:
     st.session_state.last_product = None
-if 'chat_input' not in st.session_state:
-    st.session_state.chat_input = ""
 
 # --- App UI ---
 st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
@@ -132,39 +130,18 @@ st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- Input Form (Enter works, output shows immediately) ---
-with st.form("chat_form", clear_on_submit=False):
-    user_input = st.text_input("Type your question here...", key="chat_input")
+# --- Input Form (single Enter, instant response, no crash) ---
+with st.form("chat_form", clear_on_submit=True):
+    user_input = st.text_input("Type your question here...")
     submitted = st.form_submit_button("Send")
 
-# --- Process submission AFTER form ---
-if submitted and st.session_state.chat_input.strip():
-    user_msg = st.session_state.chat_input
-    st.session_state.chat_history.append(("You", user_msg))
-    bot_reply = cluster_aware_response(user_msg)
-    st.session_state.chat_history.append(("Bot", bot_reply))
-
-    # Flag to clear on next render
-    st.session_state.clear_input = True
-
-# --- Clear chat_input using the flag ---
-if st.session_state.get("clear_input"):
-    st.session_state.chat_input = ""
-    st.session_state.clear_input = False
-
-# --- Handle submission outside the form ---
-if submitted and st.session_state.chat_input.strip():
-    user_msg = st.session_state.chat_input
-    st.session_state.chat_history.append(("You", user_msg))
-    bot_reply = cluster_aware_response(user_msg)
-    st.session_state.chat_history.append(("Bot", bot_reply))
-
-    # Clear input box properly
-    st.session_state.chat_input = ""
+    if submitted and user_input.strip():
+        st.session_state.chat_history.append(("You", user_input))
+        reply = cluster_aware_response(user_input)
+        st.session_state.chat_history.append(("Bot", reply))
 
 # --- Clear Chat Button ---
 if st.button("🗑️ Clear Chat"):
     st.session_state.chat_history = []
     st.session_state.last_cluster = None
     st.session_state.last_product = None
-    st.session_state.chat_input = ""
