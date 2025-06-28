@@ -1,9 +1,11 @@
 import streamlit as st
 import pandas as pd
-import datetime
+from datetime import datetime
+import streamlit.components.v1 as components
 
-# Load dataset
+# --- Load Data ---
 @st.cache_data
+
 def load_data():
     return pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
 
@@ -11,8 +13,9 @@ df_clusters = load_data()
 
 # --- Initialize session state ---
 if "topics" not in st.session_state:
-    today = datetime.date.today().strftime('%d %B %Y')
-    st.session_state.topics = {today: []}
+    st.session_state.topics = {}
+    today = datetime.today().strftime("%d %B %Y")
+    st.session_state.topics[today] = []
     st.session_state.active_topic = today
 if "last_cluster" not in st.session_state:
     st.session_state.last_cluster = None
@@ -94,15 +97,19 @@ def follow_up_on_last_cluster(user_input):
 
 def cluster_aware_response(user_input):
     input_lower = user_input.lower()
+
+    # Ask for cluster info
     if "cluster" in input_lower:
         for i in range(10):
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
 
+    # Ask for available product categories
     if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower:
         categories = df_clusters['Product_Category'].unique()
         return "**Available Product Categories:**\n" + "\n".join(f"- {c}" for c in sorted(categories))
 
+    # Other general questions
     if "payment" in input_lower:
         return "**Top Payment Methods:**\n- Credit Card\n- Debit Card\n- PayPal"
     if "device" in input_lower:
@@ -122,7 +129,7 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- Sidebar ---
+# --- Sidebar Chat History ---
 st.sidebar.title("📂 Chat History")
 topic_choice = st.sidebar.radio("Choose a topic:", list(st.session_state.topics.keys()))
 if topic_choice != st.session_state.active_topic:
@@ -133,49 +140,50 @@ if st.sidebar.button("➕ Add Topic") and new_topic:
     st.session_state.topics[new_topic] = []
     st.session_state.active_topic = new_topic
 
-# --- Main Chat UI ---
+chat_history = st.session_state.topics[st.session_state.active_topic]
+
+# --- Custom CSS ---
 st.markdown("""
     <style>
     .chat-container {
-        max-height: 70vh;
+        max-height: calc(100vh - 160px);
         overflow-y: auto;
-        padding: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
     }
-    .chat-bubble {
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        padding: 10px 15px;
-        border-radius: 15px;
-        margin: 5px 0;
-        width: fit-content;
-        max-width: 90%;
+    .message-box {
+        margin: 0.25rem 0;
+        padding: 0.75rem;
+        border-radius: 10px;
     }
-    .user-bubble {
-        background-color: rgba(255, 255, 255, 0.1);
-        align-self: flex-end;
+    .user-msg {
+        background-color: #1a1a1a;
+        border: 1px solid white;
     }
-    .bot-bubble {
-        background-color: rgba(255, 255, 255, 0.05);
+    .bot-msg {
+        background-color: #262626;
+        border: 1px solid white;
     }
     .input-container {
         display: flex;
-        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
         position: fixed;
-        bottom: 10px;
+        bottom: 1rem;
         left: 260px;
-        right: 10px;
-        padding: 5px;
-        background: transparent;
+        right: 1rem;
+        z-index: 100;
     }
-    .chat-input {
-        flex-grow: 1;
-        padding: 10px;
+    .stTextInput > div > div > input {
+        padding: 0.75rem;
+        font-size: 1rem;
+        border: 1px solid white;
         border-radius: 10px;
-        border: 1px solid #ccc;
+        width: 100%;
     }
     .send-button {
-        margin-left: 10px;
-        padding: 10px 20px;
-        background-color: #4CAF50;
+        padding: 0.75rem 1.5rem;
+        background-color: #22c55e;
         color: white;
         border: none;
         border-radius: 10px;
@@ -184,36 +192,26 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- Main Chat Area ---
 st.title("🛍️ Customer Insight Chatbot")
 st.markdown("Ask me about product segments, clusters, and spending trends.")
 
-chat_history = st.session_state.topics[st.session_state.active_topic]
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-for sender, msg in chat_history:
-    role_class = "user-bubble" if sender == "user" else "bot-bubble"
-    st.markdown(f'<div class="chat-bubble {role_class}"><b>{"You" if sender=="user" else "Bot"}:</b> {msg}</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+with st.container():
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    for sender, msg in chat_history:
+        role_class = "user-msg" if sender == "user" else "bot-msg"
+        st.markdown(f'<div class="message-box {role_class}"><strong>{"🧑 You" if sender == "user" else "🤖 Bot"}:</strong> {msg}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# JS for capturing enter key
-st.markdown("""
-    <script>
-    const submitMessage = () => {
-        const input = window.parent.document.querySelector('input[name="user_input"]');
-        if (input && input.value) {
-            window.parent.postMessage({type: 'streamlit:sendMessage', text: input.value}, '*');
-        }
-    }
-    </script>
-""", unsafe_allow_html=True)
-
-# Message handler
-if "user_input" not in st.session_state:
-    st.session_state.user_input = ""
-
-with st.form(key="chat_form", clear_on_submit=True):
-    user_input = st.text_input("Type your question here...", key="user_input")
-    submitted = st.form_submit_button("Send")
-    if submitted and user_input:
-        reply = cluster_aware_response(user_input)
-        chat_history.append(("user", user_input))
-        chat_history.append(("bot", reply))
+# --- Input Box ---
+with st.container():
+    st.markdown('<div class="input-container">', unsafe_allow_html=True)
+    user_input = st.text_input("Type your question here...", key="user_input", label_visibility="collapsed")
+    if st.button("Send", key="send_button"):
+        if user_input:
+            reply = cluster_aware_response(user_input)
+            chat_history.append(("user", user_input))
+            chat_history.append(("bot", reply))
+            st.session_state.user_input = ""
+            st.experimental_rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
