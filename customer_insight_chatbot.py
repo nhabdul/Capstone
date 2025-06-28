@@ -1,86 +1,113 @@
 import streamlit as st
 import pandas as pd
-import re
 
-# Load cluster summary from uploaded CSV or preprocessed DataFrame
-df = pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
+# Load dataset
+df_clusters = pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
 
-# Compute summary only once
-cluster_summary = df.groupby("Cluster").agg({
-    "Annual_Income": "mean",
-    "Spending_Score": "mean",
-    "Average_Order_Value": "mean",
-    "Number_of_Orders": "mean",
-    "Review_Score": "mean",
-    "Preferred_Payment_Method": lambda x: x.mode()[0] if not x.mode().empty else "N/A",
-    "Device_Used": lambda x: x.mode()[0] if not x.mode().empty else "N/A",
-    "Product_Category": lambda x: x.mode()[0] if not x.mode().empty else "N/A",
-    "Age": "mean"
-}).round(2)
+# Cache data load
+@st.cache_data
+def load_data():
+    return df_clusters
 
-# Category sets for general questions
-product_categories = sorted(df["Product_Category"].dropna().unique())
-payment_methods = sorted(df["Preferred_Payment_Method"].dropna().unique())
-delivery_options = sorted(df["Preferred_Delivery_Option"].dropna().unique())
-device_types = sorted(df["Device_Used"].dropna().unique())
-customer_regions = sorted(df["Customer_Region"].dropna().unique())
-age_groups = sorted(df["Age_Group"].dropna().unique())
-clusters = sorted(df["Cluster"].dropna().unique())
+# Helper: Get overview of a cluster
+def get_cluster_info(cluster_id):
+    subset = df_clusters[df_clusters['Cluster'] == cluster_id]
+    if subset.empty:
+        return "❌ That cluster doesn't exist."
+    avg_income = subset['Annual_Income'].mean()
+    avg_spend = subset['Spending_Score'].mean()
+    avg_order_value = subset['Average_Order_Value'].mean()
+    avg_orders = subset['Number_of_Orders'].mean()
+    avg_review = subset['Review_Score'].mean()
+    avg_age = subset['Age'].mean()
+    top_device = subset['Device_Used'].mode()[0]
+    top_payment = subset['Preferred_Payment_Method'].mode()[0]
+    top_product = subset['Product_Category'].mode()[0]
 
-# Free-text response function
-def chatbot_response(user_input):
-    user_input = user_input.lower()
-    cluster_match = re.search(r'cluster\s*(\d+)', user_input)
-    cluster_number = int(cluster_match.group(1)) if cluster_match else None
+    return (
+        f"### 🧠 Cluster {cluster_id} Overview\n"
+        f"- Average Income: ${avg_income:,.2f}\n"
+        f"- Spending Score: {avg_spend:.1f}\n"
+        f"- Avg Order Value: ${avg_order_value:.2f}\n"
+        f"- Orders per Customer: {avg_orders:.2f}\n"
+        f"- Average Review Score: {avg_review:.2f}\n"
+        f"- Age: {avg_age:.1f} years\n"
+        f"- Most used payment method: **{top_payment}**\n"
+        f"- Most used device: **{top_device}**\n"
+        f"- Common product: **{top_product}**"
+    )
 
-    if cluster_number is not None and cluster_number in cluster_summary.index:
-        row = cluster_summary.loc[cluster_number]
+# Helper: Product purchase distribution
+def product_cluster_response(user_input):
+    user_input_lower = user_input.lower()
+    product_categories = df_clusters['Product_Category'].unique()
+    matched_product = None
+    for product in product_categories:
+        if product.lower() in user_input_lower:
+            matched_product = product
+            break
+
+    if matched_product:
+        filtered = df_clusters[df_clusters['Product_Category'] == matched_product]
+        cluster_counts = filtered['Cluster'].value_counts().sort_values(ascending=False)
+        top_cluster = cluster_counts.idxmax()
+        count = cluster_counts.max()
         return (
-            f"🧠 **Cluster {cluster_number} Overview**\n"
-            f"- Average Income: ${row['Annual_Income']}\n"
-            f"- Spending Score: {row['Spending_Score']}\n"
-            f"- Avg Order Value: ${row['Average_Order_Value']}\n"
-            f"- Orders per Customer: {row['Number_of_Orders']}\n"
-            f"- Average Review Score: {row['Review_Score']}\n"
-            f"- Age: {round(row['Age'])} years old\n"
-            f"- Most used payment method: {row['Preferred_Payment_Method']}\n"
-            f"- Most used device: {row['Device_Used']}\n"
-            f"- Common product: {row['Product_Category']}"
+            f"💡 Customers who purchase **{matched_product}** the most are in **Cluster {top_cluster}** "
+            f"with **{count} customers**.\n\n"
+            f"You can ask: 'Tell me more about Cluster {top_cluster}' to learn about them."
         )
-    elif "product category" in user_input:
-        return "📦 Available Product Categories:\n" + "\n".join([f"{i+1}. {cat}" for i, cat in enumerate(product_categories)])
-    elif "payment method" in user_input:
-        return "💳 Payment Methods:\n" + "\n".join([f"• {m}" for m in payment_methods])
-    elif "delivery" in user_input:
-        return "🚚 Delivery Options:\n" + "\n".join([f"• {d}" for d in delivery_options])
-    elif "device" in user_input:
-        return "📱 Devices Used:\n" + "\n".join([f"• {d}" for d in device_types])
-    elif "region" in user_input:
-        return "🌍 Customer Regions:\n" + "\n".join([f"• {r}" for r in customer_regions])
-    elif "age group" in user_input:
-        return "👥 Age Groups:\n" + "\n".join([f"• {a}" for a in age_groups])
-    elif "cluster" in user_input:
-        return f"There are {len(clusters)} clusters: {', '.join(map(str, clusters))}"
-    else:
-        return "🤖 I'm not sure how to help with that. Try asking about a specific cluster or customer attributes."
+    
+    return None
 
-# Streamlit UI with chat history
-st.set_page_config(page_title="Customer Insight Chatbot", layout="centered")
-st.title("💬 Customer Insight Chatbot")
+# General Q&A
+def cluster_aware_response(user_input):
+    input_lower = user_input.lower()
 
-# Session state for chat history
-if "history" not in st.session_state:
-    st.session_state.history = []
+    if "cluster" in input_lower:
+        for i in range(5):
+            if f"{i}" in input_lower:
+                return get_cluster_info(i)
 
-user_input = st.text_input("Ask a question about your customers:")
+    if "product category" in input_lower:
+        categories = df_clusters['Product_Category'].unique()
+        return "**Available Product Categories:**\n" + "\n".join(f"- {c}" for c in sorted(categories))
 
+    if "payment" in input_lower:
+        return "**Top Payment Methods:**\n- Credit Card\n- Debit Card\n- PayPal"
+
+    if "device" in input_lower:
+        return "**Common Devices Used:**\n- Mobile\n- Desktop\n- Tablet"
+
+    if "delivery" in input_lower:
+        return "**Preferred Delivery Options:**\n- Express\n- Standard\n- Scheduled"
+
+    if "region" in input_lower:
+        return "**Customer Regions:**\n- North\n- South\n- East\n- West"
+
+    # Try product-based fallback
+    product_response = product_cluster_response(user_input)
+    if product_response:
+        return product_response
+
+    return "🤖 Sorry, I didn't understand that. You can ask about clusters, products, payments, or devices."
+
+# Streamlit UI
+st.title("🛍️ Customer Insight Chatbot")
+st.write("Ask me anything about customer clusters, products, or behavior insights!")
+
+history = st.session_state.get("chat_history", [])
+
+user_input = st.text_input("You:", key="input")
 if user_input:
-    response = chatbot_response(user_input)
-    st.session_state.history.append((user_input, response))
+    reply = cluster_aware_response(user_input)
+    history.append(("You", user_input))
+    history.append(("Bot", reply))
+    st.session_state.chat_history = history
 
 # Display chat history
-for q, a in st.session_state.history:
-    st.markdown(f"**You:** {q}")
-    st.markdown(f"{a}")
-
-st.caption("Ask about clusters, product categories, devices, payment methods, etc.")
+for speaker, text in history:
+    if speaker == "You":
+        st.markdown(f"**🧑 {speaker}:** {text}")
+    else:
+        st.markdown(f"**🤖 {speaker}:** {text}")
