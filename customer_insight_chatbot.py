@@ -113,12 +113,14 @@ def cluster_aware_response(user_input):
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
 # --- Session State Initialization ---
-if 'chat_history' not in st.session_state:
+if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-if 'last_cluster' not in st.session_state:
+if "last_cluster" not in st.session_state:
     st.session_state.last_cluster = None
-if 'last_product' not in st.session_state:
+if "last_product" not in st.session_state:
     st.session_state.last_product = None
+if "chat_input" not in st.session_state:
+    st.session_state.chat_input = ""
 
 # --- App UI ---
 st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
@@ -130,18 +132,19 @@ st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- Input Form (single Enter, instant response, no crash) ---
-with st.form("chat_form", clear_on_submit=True):
-    user_input = st.text_input("Type your question here...")
-    submitted = st.form_submit_button("Send")
+# --- User Input Box (no form) ---
+user_input = st.text_input("Type your question here...", value=st.session_state.chat_input, key="chat_input")
 
-    if submitted and user_input.strip():
-        st.session_state.chat_history.append(("You", user_input))
-        reply = cluster_aware_response(user_input)
-        st.session_state.chat_history.append(("Bot", reply))
+# --- Detect New Input ---
+if user_input.strip() and (not st.session_state.chat_history or user_input != st.session_state.chat_history[-1][1]):
+    st.session_state.chat_history.append(("You", user_input))
+    reply = cluster_aware_response(user_input)
+    st.session_state.chat_history.append(("Bot", reply))
+    st.session_state.chat_input = ""  # Reset input field
 
-# --- Clear Chat Button ---
+# --- Clear Button ---
 if st.button("🗑️ Clear Chat"):
     st.session_state.chat_history = []
     st.session_state.last_cluster = None
     st.session_state.last_product = None
+    st.session_state.chat_input = ""
