@@ -132,10 +132,15 @@ st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- Chat Form (Enter works, no bugs) ---
-with st.form("chat_form", clear_on_submit=False):
-    st.text_input("Type your question here...", key="chat_input")
+# --- Form (Enter works, input clears, no error) ---
+with st.form("chat_form", clear_on_submit=True):
+    user_input = st.text_input("Type your question here...")
     submitted = st.form_submit_button("Send")
+
+    if submitted and user_input.strip():
+        st.session_state.chat_history.append(("You", user_input))
+        reply = cluster_aware_response(user_input)
+        st.session_state.chat_history.append(("Bot", reply))
 
 # --- Handle submission outside the form ---
 if submitted and st.session_state.chat_input.strip():
