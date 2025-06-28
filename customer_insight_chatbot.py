@@ -410,7 +410,7 @@ def cluster_aware_response(user_input):
         # If just "cluster" or "clusters" is mentioned, show all available clusters
         if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
             cluster_info = "**Available Clusters:**\n\n"
-            for i in range(5):
+            for i in range(4):
                 cluster_info += f"• Cluster {i}\n\n"
             
             return cluster_info
