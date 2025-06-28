@@ -259,11 +259,11 @@ with col1:
 # Main chat area
 with col2:
     # Chat container with custom styling
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    chat_content = []
     
-    # Display chat messages
+    # Build chat content
     if not st.session_state.messages:
-        st.markdown("""
+        chat_content.append("""
         <div class="bot-message">
             Hello! I'm your Customer Insights Assistant. I can help you explore customer data and clusters.
             <br><br>
@@ -273,16 +273,21 @@ with col2:
             <br>• "Show me product categories"
             <br>• "What payment methods are popular?"
         </div>
-        """, unsafe_allow_html=True)
+        """)
     
-    # Display all messages
+    # Add all messages to chat content
     for message in st.session_state.messages:
         if message["role"] == "user":
-            st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
+            chat_content.append(f'<div class="user-message">{message["content"]}</div>')
         else:
-            st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
+            chat_content.append(f'<div class="bot-message">{message["content"]}</div>')
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Display everything inside the bordered container
+    st.markdown(f'''
+    <div class="chat-container">
+        {"".join(chat_content)}
+    </div>
+    ''', unsafe_allow_html=True)
     
     # Input area with custom styling
     st.markdown('<div class="input-container">', unsafe_allow_html=True)
@@ -307,23 +312,23 @@ with col2:
     btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
     
     with btn_col1:
-        if st.button("Cluster 0", key="cluster_0"):
-            user_input = "Tell me about cluster 0"
+        if st.button("Clusters", key="clusters"):
+            user_input = "Show me available clusters"
             submit_button = True
     
     with btn_col2:
-        if st.button("Cluster 1", key="cluster_1"):
-            user_input = "Tell me about cluster 1"
+        if st.button("🛍️ Products", key="products"):
+            user_input = "Show me product categories"
             submit_button = True
     
     with btn_col3:
-        if st.button("Cluster 2", key="cluster_2"):
-            user_input = "Tell me about cluster 2"
+        if st.button("💳 Payments", key="payments"):
+            user_input = "What payment methods are available?"
             submit_button = True
     
     with btn_col4:
-        if st.button("Cluster 3", key="cluster_3"):
-            user_input = "Tell me about cluster 3"
+        if st.button("📱 Devices", key="devices"):
+            user_input = "What devices do customers use?"
             submit_button = True
     
     st.markdown('</div>', unsafe_allow_html=True)
