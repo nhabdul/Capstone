@@ -564,7 +564,7 @@ with col2:
                 behavior: "smooth"
             }});
         }}
-    } 
+    }} 
 
     // Scroll on initial load
     window.addEventListener("load", scrollToBottom);
