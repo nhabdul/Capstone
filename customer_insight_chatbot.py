@@ -638,3 +638,27 @@ st.markdown("""
 - Try the quick action buttons for common queries
 - Ask about specific clusters (0-3), products, or customer behavior
 """)
+
+# Main chat display with smooth scroll
+st.markdown(f'''
+<div class="chat-container" id="chatbox">
+    {"".join(chat_content)}
+</div>
+<script>
+function scrollToBottom() {{
+    var chatbox = document.getElementById("chatbox");
+    if (chatbox) {{
+        chatbox.scrollTo({{
+            top: chatbox.scrollHeight,
+            behavior: 'smooth'
+        }});
+    }}
+}}
+window.addEventListener('load', scrollToBottom);
+const observer = new MutationObserver(scrollToBottom);
+observer.observe(document.getElementById("chatbox"), {{
+    childList: true,
+    subtree: true
+}});
+</script>
+''', unsafe_allow_html=True)
