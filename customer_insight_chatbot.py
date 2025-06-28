@@ -133,12 +133,16 @@ st.markdown("""
             overflow-y: auto;
             padding: 1rem;
             border: 1px solid white;
-            border-radius: 10px;
+            border-radius: 20px;
             background-color: rgba(255, 255, 255, 0.05);
             margin-bottom: 1rem;
         }
         .stTextInput>div>div>input {
             border: 1px solid white !important;
+            border-radius: 20px !important;
+        }
+        button[kind="primary"] {
+            border-radius: 20px !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -168,7 +172,7 @@ with st.container():
             st.markdown(f"**🤖 Bot:** {msg}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Input Box (Single Only) ---
+# --- Input Box ---
 def submit():
     user_input = st.session_state.user_input
     if user_input:
@@ -177,4 +181,9 @@ def submit():
         chat_history.append(("bot", reply))
         st.session_state.user_input = ""
 
-st.text_input("Type your question here...", key="user_input", on_change=submit)
+cols = st.columns([10, 1])
+with cols[0]:
+    st.text_input("Type your question here...", key="user_input", on_change=submit, label_visibility="collapsed")
+with cols[1]:
+    if st.button("📨", use_container_width=True):
+        submit()
