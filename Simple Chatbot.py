@@ -66,15 +66,15 @@ def chatbot_response(user_input):
     else:
         return "🤖 I'm not sure how to help with that. Try asking about a specific cluster or customer attributes."
 
-# UI setup
+# Page config
 st.set_page_config(page_title="Customer Insight Chatbot", layout="centered")
 st.markdown("<h1 style='text-align:center;'>💬 Customer Insight Chatbot</h1>", unsafe_allow_html=True)
 
-# Chat memory
+# Chat state
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Style
+# Style block
 st.markdown("""
 <style>
 .chat-container {
@@ -106,18 +106,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Input and response
-with st.form(key="chat_form", clear_on_submit=True):
-    user_input = st.text_input("Type your question:")
-    submit = st.form_submit_button("Send")
-
-if submit and user_input:
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    response = chatbot_response(user_input)
-    st.session_state.history.insert(0, ("Bot", response, now))
-    st.session_state.history.insert(0, ("You", user_input, now))
-
-# Display chat
+# Display messages first
 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 for sender, msg, time in st.session_state.history:
     if sender == "You":
@@ -127,5 +116,16 @@ for sender, msg, time in st.session_state.history:
         st.markdown(f'<div class="timestamp">{time}</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="bot-msg">🤖 <b>Bot:</b><br>{msg}</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
+
+# Input comes after
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("Type your question:")
+    submit = st.form_submit_button("Send")
+
+if submit and user_input:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    response = chatbot_response(user_input)
+    st.session_state.history.insert(0, ("Bot", response, now))
+    st.session_state.history.insert(0, ("You", user_input, now))
 
 st.caption("Ask about clusters, products, devices, payments, etc.")
