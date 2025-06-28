@@ -135,6 +135,7 @@ st.markdown("""
             border: 1px solid white;
             border-radius: 12px;
             background-color: rgba(255, 255, 255, 0.05);
+            margin-bottom: 6rem;
         }
         .chat-input-wrapper {
             position: fixed;
@@ -180,18 +181,7 @@ st.markdown("Ask me about product segments, clusters, and spending trends.")
 
 chat_history = st.session_state.topics[st.session_state.active_topic]
 
-# Show conversation in scrollable container
-chat_placeholder = st.empty()
-with chat_placeholder.container():
-    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-    for sender, msg in chat_history:
-        if sender == "user":
-            st.markdown(f"**🧑 You:** {msg}")
-        else:
-            st.markdown(f"**🤖 Bot:** {msg}")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# Chat input at bottom of screen
+# Collect user input first
 st.markdown("<div class='chat-input-wrapper'>", unsafe_allow_html=True)
 with st.form(key="chat_form_bottom", clear_on_submit=True):
     chat_col1, chat_col2 = st.columns([10, 1])
@@ -204,14 +194,13 @@ with st.form(key="chat_form_bottom", clear_on_submit=True):
         reply = cluster_aware_response(user_input)
         chat_history.append(("user", user_input))
         chat_history.append(("bot", reply))
-        # Refresh chat output
-        with chat_placeholder.container():
-            st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-            for sender, msg in chat_history:
-                if sender == "user":
-                    st.markdown(f"**🧑 You:** {msg}")
-                else:
-                    st.markdown(f"**🤖 Bot:** {msg}")
-            st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
+# Then show conversation in scrollable container
+st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+for sender, msg in chat_history:
+    if sender == "user":
+        st.markdown(f"**🧑 You:** {msg}")
+    else:
+        st.markdown(f"**🤖 Bot:** {msg}")
 st.markdown("</div>", unsafe_allow_html=True)
