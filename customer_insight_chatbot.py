@@ -96,18 +96,15 @@ def follow_up_on_last_cluster(user_input):
 def cluster_aware_response(user_input):
     input_lower = user_input.lower()
 
-    # Ask for cluster info
     if "cluster" in input_lower:
-        for i in range(10):  # supports clusters 0–9
+        for i in range(10):
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
 
-    # Ask for available product categories
     if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower:
         categories = df_clusters['Product_Category'].unique()
         return "**Available Product Categories:**\n" + "\n".join(f"- {c}" for c in sorted(categories))
 
-    # Other general questions
     if "payment" in input_lower:
         return "**Top Payment Methods:**\n- Credit Card\n- Debit Card\n- PayPal"
     if "device" in input_lower:
@@ -187,14 +184,15 @@ with st.container():
             st.markdown(f"**🤖 Bot:** {msg}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Input + Send Button
-col1, col2 = st.columns([10, 1])
-with col1:
-    user_input = st.text_input("Type your question here...", key="user_input")
-with col2:
-    if st.button("📤", key="send_button"):
-        if user_input:
-            reply = cluster_aware_response(user_input)
-            chat_history.append(("user", user_input))
-            chat_history.append(("bot", reply))
-            st.session_state.user_input = ""
+# --- Input + Send Button in Form ---
+with st.form(key="chat_form", clear_on_submit=True):
+    col1, col2 = st.columns([10, 1])
+    with col1:
+        user_input = st.text_input("Type your question here...", key="user_input_form", label_visibility="visible")
+    with col2:
+        submitted = st.form_submit_button("📤")
+
+    if submitted and user_input:
+        reply = cluster_aware_response(user_input)
+        chat_history.append(("user", user_input))
+        chat_history.append(("bot", reply))
