@@ -388,14 +388,14 @@ def cluster_aware_response(user_input):
     # Handle cluster queries
     if "cluster" in input_lower:
         # Check for specific cluster numbers
-        for i in range(5):  # Support clusters 0-4
+        for i in range(4):  # Support clusters 0-3
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
         
         # If just "cluster" or "clusters" is mentioned, show all available clusters
         if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
             cluster_info = "**Available Clusters:**\n\n"
-            for i in range(5):
+            for i in range(4):
                 cluster_info += f"• Cluster {i}\n\n"
             
             return cluster_info
