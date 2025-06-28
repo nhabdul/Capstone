@@ -549,19 +549,38 @@ with col2:
         else:
             chat_content.append(f'<div class="bot-message">{message["content"]}</div>')
     
-    # Display everything inside the bordered container
+    # Display everything inside the bordered container with smooth auto-scroll
     st.markdown(f'''
     <div class="chat-container" id="chatbox">
         {"".join(chat_content)}
     </div>
+
     <script>
-        var chatbox = document.getElementById("chatbox");
+    function scrollToBottom() {{
+        const chatbox = document.getElementById("chatbox");
         if (chatbox) {{
-            chatbox.scrollTop = chatbox.scrollHeight;
+            chatbox.scrollTo({{
+                top: chatbox.scrollHeight,
+                behavior: "smooth"
+            }});
         }}
+    } 
+
+    // Scroll on initial load
+    window.addEventListener("load", scrollToBottom);
+
+    // Scroll on any content change in chatbox
+    const chatbox = document.getElementById("chatbox");
+    if (chatbox) {{
+        const observer = new MutationObserver(scrollToBottom);
+        observer.observe(chatbox, {{
+            childList: true,
+            subtree: true
+        }});
+    }}
     </script>
     ''', unsafe_allow_html=True)
-    
+
     # Input area with custom styling - seamlessly connected to chat container
     st.markdown('''
     <div class="input-container">
@@ -639,26 +658,3 @@ st.markdown("""
 - Ask about specific clusters (0-3), products, or customer behavior
 """)
 
-# Main chat display with smooth scroll
-st.markdown(f'''
-<div class="chat-container" id="chatbox">
-    {"".join(chat_content)}
-</div>
-<script>
-function scrollToBottom() {{
-    var chatbox = document.getElementById("chatbox");
-    if (chatbox) {{
-        chatbox.scrollTo({{
-            top: chatbox.scrollHeight,
-            behavior: 'smooth'
-        }});
-    }}
-}}
-window.addEventListener('load', scrollToBottom);
-const observer = new MutationObserver(scrollToBottom);
-observer.observe(document.getElementById("chatbox"), {{
-    childList: true,
-    subtree: true
-}});
-</script>
-''', unsafe_allow_html=True)
