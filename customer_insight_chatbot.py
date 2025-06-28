@@ -4,7 +4,7 @@ from datetime import datetime
 
 # Set page config for better layout
 st.set_page_config(
-    page_title="Customer Analytics Chatbot",
+    page_title="Customer Insights Chatbot",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -18,7 +18,7 @@ st.markdown("""
         border: 2px solid #e0e0e0;
         border-radius: 10px;
         padding: 20px;
-        background-color: #f8f9fa;
+        background-color: transparent;
         margin: 10px 0;
         min-height: 400px;
         max-height: 600px;
@@ -27,23 +27,20 @@ st.markdown("""
     
     /* Message styling */
     .user-message {
-        background-color: #007bff;
-        color: white;
-        padding: 10px 15px;
-        border-radius: 18px;
+        background-color: transparent;
+        color: #007bff;
+        padding: 10px 0;
         margin: 5px 0;
-        margin-left: 20%;
         text-align: right;
         word-wrap: break-word;
+        font-weight: 600;
     }
     
     .bot-message {
-        background-color: #e9ecef;
+        background-color: transparent;
         color: #333;
-        padding: 10px 15px;
-        border-radius: 18px;
+        padding: 10px 0;
         margin: 5px 0;
-        margin-right: 20%;
         word-wrap: break-word;
     }
     
@@ -86,8 +83,8 @@ st.markdown("""
     /* Responsive design */
     @media (max-width: 768px) {
         .user-message, .bot-message {
-            margin-left: 5%;
-            margin-right: 5%;
+            margin-left: 5px;
+            margin-right: 5px;
         }
     }
 </style>
@@ -231,7 +228,7 @@ def cluster_aware_response(user_input):
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
 # --- Main App Layout ---
-st.title("🤖 Customer Analytics Chatbot")
+st.title("Customer Insights Chatbot")
 st.markdown("Ask me about customer clusters, products, and spending patterns!")
 
 # Create layout with sidebar and main content
@@ -268,7 +265,7 @@ with col2:
     if not st.session_state.messages:
         st.markdown("""
         <div class="bot-message">
-            👋 Hello! I'm your Customer Analytics Assistant. I can help you explore customer data and clusters.
+            Hello! I'm your Customer Insights Assistant. I can help you explore customer data and clusters.
             <br><br>
             Try asking me:
             <br>• "Tell me about cluster 1"
@@ -310,23 +307,23 @@ with col2:
     btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
     
     with btn_col1:
-        if st.button("📊 Cluster 0", key="cluster_0"):
+        if st.button("Cluster 0", key="cluster_0"):
             user_input = "Tell me about cluster 0"
             submit_button = True
     
     with btn_col2:
-        if st.button("🛍️ Products", key="products"):
-            user_input = "Show me product categories"
+        if st.button("Cluster 1", key="cluster_1"):
+            user_input = "Tell me about cluster 1"
             submit_button = True
     
     with btn_col3:
-        if st.button("💳 Payments", key="payments"):
-            user_input = "What payment methods are available?"
+        if st.button("Cluster 2", key="cluster_2"):
+            user_input = "Tell me about cluster 2"
             submit_button = True
     
     with btn_col4:
-        if st.button("📱 Devices", key="devices"):
-            user_input = "What devices do customers use?"
+        if st.button("Cluster 3", key="cluster_3"):
+            user_input = "Tell me about cluster 3"
             submit_button = True
     
     st.markdown('</div>', unsafe_allow_html=True)
@@ -360,5 +357,5 @@ st.markdown("""
 - Type your question and press Enter or click Send
 - Use the sidebar to view and reload previous conversations
 - Try the quick action buttons for common queries
-- Ask about specific clusters (0-9), products, or customer behavior
+- Ask about specific clusters (0-3), products, or customer behavior
 """)
