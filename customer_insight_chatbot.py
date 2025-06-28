@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import streamlit.components.v1 as components
 
 # Load dataset
 @st.cache_data
@@ -18,8 +19,7 @@ if "last_cluster" not in st.session_state:
 if "last_product" not in st.session_state:
     st.session_state.last_product = None
 
-# --- Helper Functions ---
-
+# Helper functions
 def get_cluster_info(cluster_id):
     subset = df_clusters[df_clusters['Cluster'] == cluster_id]
     if subset.empty:
@@ -128,7 +128,7 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- Sidebar with topic history ---
+# Sidebar with topic history
 st.sidebar.title("📂 Chat History")
 topic_choice = st.sidebar.radio("Choose a topic:", list(st.session_state.topics.keys()))
 if topic_choice != st.session_state.active_topic:
@@ -139,54 +139,59 @@ if st.sidebar.button("➕ Add Topic") and new_topic:
     st.session_state.topics[new_topic] = []
     st.session_state.active_topic = new_topic
 
-# --- Chat UI ---
-st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
+# Chat UI
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #0e0e0f;
-    }
-    .chat-box {
-        height: calc(100vh - 150px);
+    .chat-container {
+        position: relative;
+        height: 80vh;
         overflow-y: auto;
         padding: 1rem;
-        background-color: transparent;
+        border: 1px solid #aaa;
+        border-radius: 10px;
+        background: transparent;
+        color: white;
     }
-    .chat-input {
+    .input-box {
         position: fixed;
-        bottom: 2rem;
-        left: 20rem;
-        width: calc(100% - 23rem);
-        background-color: #1a1a1b;
+        bottom: 1rem;
+        left: 18rem;
+        right: 2rem;
+        background-color: #0e1117;
         padding: 1rem;
         border-radius: 8px;
-        z-index: 1000;
-    }
-    input[type="text"]::placeholder {
-        color: #999;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("""<h1 style='text-align: center; color: white;'>🛍️ Customer Insight Chatbot</h1>
-<p style='text-align: center; color: gray;'>Ask me about product segments, clusters, and spending trends.</p>""", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>🛍️ Customer Insight Chatbot</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Ask me about product segments, clusters, and spending trends.</p>", unsafe_allow_html=True)
 
 chat_history = st.session_state.topics[st.session_state.active_topic]
-
-st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
+st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
 for sender, msg in chat_history:
     if sender == "user":
-        st.markdown(f"<div style='color:#d1d1d1; margin-bottom: 1rem;'><strong>🧑 You:</strong> {msg}</div>", unsafe_allow_html=True)
+        st.markdown(f"**🧑 You:** {msg}")
     else:
-        st.markdown(f"<div style='color:#9fc5e8; margin-bottom: 1.5rem;'><strong>🤖 Bot:</strong> {msg}</div>", unsafe_allow_html=True)
+        st.markdown(f"**🤖 Bot:** {msg}")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Input field with auto-clear
-st.markdown("<div class='chat-input'>", unsafe_allow_html=True)
-user_input = st.text_input("Your question", key="user_input", label_visibility="collapsed", placeholder="Ask a question about customers, clusters, or spending…")
-if user_input:
-    reply = cluster_aware_response(user_input)
-    chat_history.append(("user", user_input))
-    chat_history.append(("bot", reply))
-    st.session_state.user_input = ""
-st.markdown("</div>", unsafe_allow_html=True)
+# Text input in fixed box
+with st.container():
+    st.markdown("""
+        <script>
+        const inputBox = window.parent.document.querySelector("input[type='text']");
+        if (inputBox) inputBox.placeholder = "Type your question here...";
+        </script>
+    """, unsafe_allow_html=True)
+    st.markdown("<div class='input-box'>", unsafe_allow_html=True)
+    def submit():
+        user_input = st.session_state.user_input
+        if user_input:
+            reply = cluster_aware_response(user_input)
+            chat_history.append(("user", user_input))
+            chat_history.append(("bot", reply))
+            st.session_state.user_input = ""
+    st.text_input("", key="user_input", on_change=submit)
+    st.markdown("</div>", unsafe_allow_html=True)
