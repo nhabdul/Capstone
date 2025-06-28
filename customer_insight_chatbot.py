@@ -132,17 +132,17 @@ st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- Form (Enter key works, no delay) ---
+# --- Form (Enter key works, no error) ---
 with st.form("chat_form", clear_on_submit=False):
-    user_input = st.text_input("Type your question here...", value=st.session_state.chat_input, key="input_field")
+    user_input = st.text_input("Type your question here...", key="chat_input")
     submitted = st.form_submit_button("Send")
 
-    if submitted and user_input.strip():
-        st.session_state.chat_history.append(("You", user_input))
-        reply = cluster_aware_response(user_input)
-        st.session_state.chat_history.append(("Bot", reply))
-        st.session_state.chat_input = ""  # manually clear
-        st.experimental_rerun()  # force UI update immediately
+if submitted and st.session_state.chat_input.strip():
+    msg = st.session_state.chat_input
+    st.session_state.chat_history.append(("You", msg))
+    reply = cluster_aware_response(msg)
+    st.session_state.chat_history.append(("Bot", reply))
+    st.session_state.chat_input = ""  # manually clear input box
 
 # --- Clear Chat ---
 if st.button("🗑️ Clear Chat"):
