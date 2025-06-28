@@ -125,22 +125,22 @@ st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
 st.title("🛍️ Customer Insight Chatbot")
 st.markdown("Ask me about product segments, customer clusters, or behavior insights!")
 
-# --- Show Chat History at Top ---
+# --- Display Chat History at the Top ---
 st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- Input Section (NO FORM) ---
-user_input = st.text_input("Type your question here...", key="chat_input")
-send_clicked = st.button("Send")
+# --- Input Form (Enter key works) ---
+with st.form("chat_input_form", clear_on_submit=True):
+    user_input = st.text_input("Type your question here...")
+    submitted = st.form_submit_button("Send")
 
-if send_clicked and user_input.strip() != "":
-    st.session_state.chat_history.append(("You", user_input))
-    reply = cluster_aware_response(user_input)
-    st.session_state.chat_history.append(("Bot", reply))
-    st.session_state.chat_input = ""  # clear input box manually
+    if submitted and user_input.strip() != "":
+        st.session_state.chat_history.append(("You", user_input))
+        reply = cluster_aware_response(user_input)
+        st.session_state.chat_history.append(("Bot", reply))
 
-# --- Optional: Clear Chat ---
+# --- Clear Chat Button ---
 if st.button("🗑️ Clear Chat"):
     st.session_state.chat_history = []
     st.session_state.last_cluster = None
