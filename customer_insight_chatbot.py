@@ -121,6 +121,8 @@ if "last_product" not in st.session_state:
     st.session_state.last_product = None
 if "chat_input" not in st.session_state:
     st.session_state.chat_input = ""
+if "clear_next" not in st.session_state:
+    st.session_state.clear_next = False
 
 # --- App UI ---
 st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
@@ -132,15 +134,21 @@ st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- User Input Box (no form) ---
+# --- Input ---
 user_input = st.text_input("Type your question here...", value=st.session_state.chat_input, key="chat_input")
 
-# --- Detect New Input ---
-if user_input.strip() and (not st.session_state.chat_history or user_input != st.session_state.chat_history[-1][1]):
+# --- If new message submitted ---
+if user_input.strip() and not st.session_state.clear_next:
     st.session_state.chat_history.append(("You", user_input))
     reply = cluster_aware_response(user_input)
     st.session_state.chat_history.append(("Bot", reply))
-    st.session_state.chat_input = ""  # Reset input field
+    st.session_state.clear_next = True
+    st.experimental_rerun()
+
+# --- Reset input safely after rerun ---
+if st.session_state.clear_next:
+    st.session_state.chat_input = ""
+    st.session_state.clear_next = False
 
 # --- Clear Button ---
 if st.button("🗑️ Clear Chat"):
@@ -148,3 +156,4 @@ if st.button("🗑️ Clear Chat"):
     st.session_state.last_cluster = None
     st.session_state.last_product = None
     st.session_state.chat_input = ""
+    st.session_state.clear_next = False
