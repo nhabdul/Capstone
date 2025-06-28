@@ -239,6 +239,39 @@ if 'last_product' not in st.session_state:
 if 'dark_theme' not in st.session_state:
     st.session_state.dark_theme = False
 
+# Helper function to group chat history by time
+def group_chat_history(chat_history):
+    if not chat_history:
+        return []
+    
+    grouped = []
+    current_group = []
+    current_time = None
+    
+    for timestamp, user_msg, bot_msg in chat_history:
+        # Parse timestamp to datetime for comparison
+        chat_time = datetime.strptime(timestamp, "%H:%M")
+        
+        if current_time is None:
+            current_time = chat_time
+            current_group = [(timestamp, user_msg, bot_msg)]
+        else:
+            # Check if the chat is within 10 minutes of the current group
+            time_diff = abs((chat_time - current_time).total_seconds())
+            if time_diff <= 600:  # 10 minutes = 600 seconds
+                current_group.append((timestamp, user_msg, bot_msg))
+            else:
+                # Start a new group
+                grouped.append(current_group)
+                current_group = [(timestamp, user_msg, bot_msg)]
+                current_time = chat_time
+    
+    # Add the last group
+    if current_group:
+        grouped.append(current_group)
+    
+    return grouped
+
 # Apply theme CSS after session state is initialized
 st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
 
@@ -246,20 +279,20 @@ st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
 @st.cache_data
 def load_data():
     # This is a placeholder - replace with your actual data loading
-    # For demo purposes, creating sample data structure
+    # For demo purposes, creating sample data structure with 5 clusters
     return pd.DataFrame({
-        'Cluster': [0, 1, 2, 0, 1, 2] * 100,
-        'Annual_Income': [50000, 75000, 100000, 55000, 80000, 95000] * 100,
-        'Spending_Score': [20, 50, 80, 25, 55, 75] * 100,
-        'Average_Order_Value': [100, 200, 300, 150, 250, 280] * 100,
-        'Number_of_Orders': [5, 10, 15, 6, 12, 14] * 100,
-        'Review_Score': [3.5, 4.0, 4.5, 3.8, 4.2, 4.3] * 100,
-        'Age': [25, 35, 45, 28, 38, 42] * 100,
-        'Device_Used': ['Mobile', 'Desktop', 'Tablet', 'Mobile', 'Desktop', 'Mobile'] * 100,
-        'Preferred_Payment_Method': ['Credit Card', 'PayPal', 'Debit Card', 'Credit Card', 'PayPal', 'Credit Card'] * 100,
-        'Product_Category': ['Electronics', 'Clothing', 'Books', 'Electronics', 'Home', 'Sports'] * 100,
-        'Customer_Region': ['North', 'South', 'East', 'West', 'North', 'South'] * 100,
-        'Gender': ['Male', 'Female', 'Male', 'Female', 'Male', 'Female'] * 100
+        'Cluster': [0, 1, 2, 3, 4, 0, 1, 2, 3, 4] * 60,
+        'Annual_Income': [45000, 65000, 85000, 105000, 125000, 50000, 70000, 90000, 110000, 130000] * 60,
+        'Spending_Score': [15, 35, 55, 75, 95, 20, 40, 60, 80, 90] * 60,
+        'Average_Order_Value': [80, 150, 220, 290, 360, 100, 180, 250, 320, 380] * 60,
+        'Number_of_Orders': [3, 7, 11, 15, 19, 5, 9, 13, 17, 21] * 60,
+        'Review_Score': [3.2, 3.7, 4.1, 4.4, 4.7, 3.5, 3.9, 4.2, 4.5, 4.8] * 60,
+        'Age': [22, 32, 42, 52, 62, 25, 35, 45, 55, 65] * 60,
+        'Device_Used': ['Mobile', 'Desktop', 'Tablet', 'Mobile', 'Desktop', 'Mobile', 'Tablet', 'Desktop', 'Mobile', 'Tablet'] * 60,
+        'Preferred_Payment_Method': ['Credit Card', 'PayPal', 'Debit Card', 'Apple Pay', 'Google Pay', 'Credit Card', 'PayPal', 'Debit Card', 'Apple Pay', 'Google Pay'] * 60,
+        'Product_Category': ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty', 'Electronics', 'Clothing', 'Books', 'Home'] * 60,
+        'Customer_Region': ['North', 'South', 'East', 'West', 'Central', 'North', 'South', 'East', 'West', 'Central'] * 60,
+        'Gender': ['Male', 'Female', 'Male', 'Female', 'Male', 'Female', 'Male', 'Female', 'Male', 'Female'] * 60
     })
 
 # Load data
@@ -341,23 +374,81 @@ def follow_up_on_last_cluster(user_input):
 def cluster_aware_response(user_input):
     input_lower = user_input.lower()
 
+    # Handle cluster queries
     if "cluster" in input_lower:
-        for i in range(10):
+        # Check for specific cluster numbers
+        for i in range(5):  # Support clusters 0-4
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
+        
+        # If just "cluster" or "clusters" is mentioned, show all available clusters
+        if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
+            cluster_info = "**Available Customer Clusters:**\n\n"
+            for i in range(5):
+                subset = df_clusters[df_clusters['Cluster'] == i]
+                avg_income = subset['Annual_Income'].mean()
+                spending_score = subset['Spending_Score'].mean()
+                cluster_info += f"• **Cluster {i}** - Avg Income: ${avg_income:,.0f}, Spending Score: {spending_score:.1f}\n"
+            
+            cluster_info += "\n*Type 'Tell me about cluster X' (where X is 0-4) to get detailed information*"
+            return cluster_info
 
-    if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower:
-        categories = df_clusters['Product_Category'].unique()
-        return "**Available Product Categories:**\n" + "\n".join(f"- {c}" for c in sorted(categories))
+    if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower or "show me product categories" in input_lower:
+        categories = sorted(df_clusters['Product_Category'].unique())
+        category_info = "**Available Product Categories:**\n\n"
+        
+        for category in categories:
+            # Find which cluster buys this product most
+            filtered = df_clusters[df_clusters['Product_Category'] == category]
+            if not filtered.empty:
+                top_cluster = filtered['Cluster'].value_counts().idxmax()
+                count = filtered['Cluster'].value_counts().max()
+                category_info += f"• **{category}** - Most purchased by Cluster {top_cluster} ({count} customers)\n"
+        
+        category_info += "\n*Ask about any specific product category to get detailed customer analysis*"
+        return category_info
 
-    if "payment" in input_lower:
-        return "**Top Payment Methods:**\n- Credit Card\n- Debit Card\n- PayPal"
-    if "device" in input_lower:
-        return "**Common Devices Used:**\n- Mobile\n- Desktop\n- Tablet"
+    if "payment" in input_lower or "what payment methods are available" in input_lower:
+        payments = sorted(df_clusters['Preferred_Payment_Method'].unique())
+        payment_info = "**Available Payment Methods:**\n\n"
+        
+        for payment in payments:
+            # Count usage across clusters
+            usage_count = len(df_clusters[df_clusters['Preferred_Payment_Method'] == payment])
+            most_used_cluster = df_clusters[df_clusters['Preferred_Payment_Method'] == payment]['Cluster'].value_counts().idxmax()
+            payment_info += f"• **{payment}** - Used by {usage_count} customers, most popular in Cluster {most_used_cluster}\n"
+        
+        payment_info += "\n*Ask about specific payment methods to see detailed usage patterns*"
+        return payment_info
+    
+    if "device" in input_lower or "what devices do customers use" in input_lower:
+        devices = sorted(df_clusters['Device_Used'].unique())
+        device_info = "**Common Devices Used:**\n\n"
+        
+        for device in devices:
+            # Count usage and find most common cluster
+            usage_count = len(df_clusters[df_clusters['Device_Used'] == device])
+            most_used_cluster = df_clusters[df_clusters['Device_Used'] == device]['Cluster'].value_counts().idxmax()
+            device_info += f"• **{device}** - Used by {usage_count} customers, most common in Cluster {most_used_cluster}\n"
+        
+        device_info += "\n*Ask about specific devices to see detailed usage statistics across customer segments*"
+        return device_info
+    
     if "delivery" in input_lower:
-        return "**Preferred Delivery Options:**\n- Express\n- Standard\n- Scheduled"
+        return "**Preferred Delivery Options:**\n\n• **Express** - Fast delivery (1-2 days)\n• **Standard** - Regular delivery (3-5 days)\n• **Scheduled** - Choose your delivery time\n\n*Ask about specific delivery preferences to see customer behavior patterns*"
+    
     if "region" in input_lower:
-        return "**Customer Regions:**\n- North\n- South\n- East\n- West"
+        regions = sorted(df_clusters['Customer_Region'].unique())
+        region_info = "**Customer Regions:**\n\n"
+        
+        for region in regions:
+            # Count customers and find dominant cluster
+            customer_count = len(df_clusters[df_clusters['Customer_Region'] == region])
+            dominant_cluster = df_clusters[df_clusters['Customer_Region'] == region]['Cluster'].value_counts().idxmax()
+            region_info += f"• **{region}** - {customer_count} customers, dominated by Cluster {dominant_cluster}\n"
+        
+        region_info += "\n*Ask about specific regions to see customer distribution and behavior patterns*"
+        return region_info
 
     product_response = product_cluster_response(user_input)
     if product_response:
@@ -394,17 +485,41 @@ with col1:
         st.session_state.chat_history = []
         st.rerun()
     
-    # Display chat history
+    # Display grouped chat history
     if st.session_state.chat_history:
-        for i, (timestamp, user_msg, bot_msg) in enumerate(reversed(st.session_state.chat_history)):
-            with st.expander(f"💬 {timestamp}", expanded=False):
-                st.markdown(f"**You:** {user_msg[:50]}...")
-                st.markdown(f"**Bot:** {bot_msg[:50]}...")
-                if st.button("🔄 Reload", key=f"reload_{i}"):
-                    # Add the conversation back to current messages
-                    st.session_state.messages.append({"role": "user", "content": user_msg})
-                    st.session_state.messages.append({"role": "assistant", "content": bot_msg})
-                    st.rerun()
+        grouped_history = group_chat_history(st.session_state.chat_history)
+        
+        for group_idx, chat_group in enumerate(reversed(grouped_history)):
+            # Get time range for the group
+            start_time = chat_group[0][0]
+            end_time = chat_group[-1][0]
+            
+            if len(chat_group) == 1:
+                group_label = f"💬 {start_time}"
+            else:
+                group_label = f"💬 {start_time} - {end_time} ({len(chat_group)} chats)"
+            
+            with st.expander(group_label, expanded=False):
+                for i, (timestamp, user_msg, bot_msg) in enumerate(chat_group):
+                    st.markdown(f"**[{timestamp}] You:** {user_msg[:40]}...")
+                    st.markdown(f"**Bot:** {bot_msg[:40]}...")
+                    
+                    col_reload, col_continue = st.columns(2)
+                    with col_reload:
+                        if st.button("🔄", key=f"reload_{group_idx}_{i}", help="Reload this conversation"):
+                            st.session_state.messages.append({"role": "user", "content": user_msg})
+                            st.session_state.messages.append({"role": "assistant", "content": bot_msg})
+                            st.rerun()
+                    with col_continue:
+                        if st.button("➕", key=f"continue_{group_idx}_{i}", help="Continue from here"):
+                            # Load all conversations up to this point
+                            for ts, u_msg, b_msg in chat_group[:i+1]:
+                                st.session_state.messages.append({"role": "user", "content": u_msg})
+                                st.session_state.messages.append({"role": "assistant", "content": b_msg})
+                            st.rerun()
+                    
+                    if i < len(chat_group) - 1:
+                        st.markdown("---")
 
 # Main chat area
 with col2:
@@ -465,7 +580,7 @@ with col2:
     btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
     
     with btn_col1:
-        if st.button("Clusters", key="clusters"):
+        if st.button("🧠 Clusters", key="clusters"):
             user_input = "Show me available clusters"
             submit_button = True
     
