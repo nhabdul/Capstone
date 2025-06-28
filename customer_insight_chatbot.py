@@ -132,20 +132,20 @@ st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- Chat Form ---
+# --- Form (Enter key works) ---
 with st.form("chat_form", clear_on_submit=False):
-    st.text_input("Type your question here...", key="chat_input")
+    user_input = st.text_input("Type your question here...", key="chat_input")
     submitted = st.form_submit_button("Send")
 
-# --- Handle Response ---
-if submitted and st.session_state.chat_input.strip():
-    msg = st.session_state.chat_input
-    st.session_state.chat_history.append(("You", msg))
-    reply = cluster_aware_response(msg)
+# --- Handle Submission & Response ---
+if submitted and user_input.strip():
+    st.session_state.chat_history.append(("You", user_input))
+    reply = cluster_aware_response(user_input)
     st.session_state.chat_history.append(("Bot", reply))
 
-    # Safe manual input clear trick
-    st.session_state.chat_input = ""
+    # Hack to visually clear input: rerender with different key temporarily
+    st.text_input("clear_input", value="", key="temp_input", label_visibility="collapsed")
+    del st.session_state["chat_input"]
 
 # --- Clear Chat Option ---
 if st.button("🗑️ Clear Chat"):
