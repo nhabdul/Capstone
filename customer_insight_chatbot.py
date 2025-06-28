@@ -8,7 +8,7 @@ def load_data():
 
 df_clusters = load_data()
 
-# --- Helper Functions (unchanged) ---
+# --- Helper Functions ---
 def get_cluster_info(cluster_id):
     subset = df_clusters[df_clusters['Cluster'] == cluster_id]
     if subset.empty:
@@ -112,7 +112,7 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- Session State ---
+# --- Session State Initialization ---
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'last_cluster' not in st.session_state:
@@ -122,29 +122,32 @@ if 'last_product' not in st.session_state:
 if 'chat_input' not in st.session_state:
     st.session_state.chat_input = ""
 
-# --- Layout ---
+# --- App UI ---
 st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
 st.title("🛍️ Customer Insight Chatbot")
 st.markdown("Ask me about product segments, customer clusters, or behavior insights!")
 
-# --- Display Chat History ---
+# --- Chat History Display ---
 st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- Form (Enter key works, no error) ---
+# --- Chat Form ---
 with st.form("chat_form", clear_on_submit=False):
-    user_input = st.text_input("Type your question here...", key="chat_input")
+    st.text_input("Type your question here...", key="chat_input")
     submitted = st.form_submit_button("Send")
 
+# --- Handle Response ---
 if submitted and st.session_state.chat_input.strip():
     msg = st.session_state.chat_input
     st.session_state.chat_history.append(("You", msg))
     reply = cluster_aware_response(msg)
     st.session_state.chat_history.append(("Bot", reply))
-    st.session_state.chat_input = ""  # manually clear input box
 
-# --- Clear Chat ---
+    # Safe manual input clear trick
+    st.session_state.chat_input = ""
+
+# --- Clear Chat Option ---
 if st.button("🗑️ Clear Chat"):
     st.session_state.chat_history = []
     st.session_state.last_cluster = None
