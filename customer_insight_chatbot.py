@@ -138,10 +138,13 @@ for sender, msg in st.session_state.chat_history:
     else:
         st.markdown(f"**🤖 Bot:** {msg}")
 
-user_input = st.text_input("Type your question here:", key="user_input")
-if st.button("Send"):
-    if user_input:
-        response = cluster_aware_response(user_input)
-        st.session_state.chat_history.append(("user", user_input))
-        st.session_state.chat_history.append(("bot", response))
+user_input = st.text_input("Ask your question", key="user_input")
+
+if st.button("Send") and user_input:
+    response = cluster_aware_response(user_input)
+    st.session_state.chat_history.append(("user", user_input))
+    st.session_state.chat_history.append(("bot", response))
+    
+    # ✅ Safe clearing
+    if "user_input" in st.session_state:
         st.session_state.user_input = ""
