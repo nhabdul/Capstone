@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import time
+import numpy as np
 
 # Set page config for better layout
 st.set_page_config(
@@ -357,21 +358,40 @@ st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
 # Load your data (replace with your actual data loading)
 @st.cache_data
 def load_data():
-    # For demonstration, creating sample data - replace with your actual data loading
+    # Fixed sample data with consistent array lengths
+    n_samples = 80  # Total number of samples
+    
+    # Create base patterns
+    clusters = [0, 1, 2, 3] * (n_samples // 4)
+    incomes = np.random.normal(75000, 20000, n_samples).astype(int)
+    spending_scores = np.random.uniform(20, 100, n_samples)
+    order_values = np.random.uniform(50, 500, n_samples)
+    num_orders = np.random.randint(1, 50, n_samples)
+    review_scores = np.random.uniform(3.0, 5.0, n_samples)
+    ages = np.random.randint(18, 80, n_samples)
+    
+    # Create categorical data with proper cycling
+    devices = ['Mobile', 'Desktop', 'Tablet']
+    payments = ['Credit Card', 'PayPal', 'Bank Transfer']
+    products = ['Electronics', 'Clothing', 'Books', 'Home & Garden']
+    regions = ['North', 'South', 'East', 'West']
+    genders = ['Male', 'Female']
+    
     sample_data = {
-        'Cluster': [0, 0, 1, 1, 2, 2, 3, 3] * 10,
-        'Annual_Income': [50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000] * 10,
-        'Spending_Score': [30, 40, 50, 60, 70, 80, 90, 95] * 10,
-        'Average_Order_Value': [100, 150, 200, 250, 300, 350, 400, 450] * 10,
-        'Number_of_Orders': [5, 8, 12, 15, 20, 25, 30, 35] * 10,
-        'Review_Score': [3.5, 4.0, 4.2, 4.5, 4.7, 4.8, 4.9, 5.0] * 10,
-        'Age': [25, 30, 35, 40, 45, 50, 55, 60] * 10,
-        'Device_Used': ['Mobile', 'Desktop', 'Tablet'] * 27,
-        'Preferred_Payment_Method': ['Credit Card', 'PayPal', 'Bank Transfer'] * 27,
-        'Product_Category': ['Electronics', 'Clothing', 'Books', 'Home & Garden'] * 20,
-        'Customer_Region': ['North', 'South', 'East', 'West'] * 20,
-        'Gender': ['Male', 'Female'] * 40
+        'Cluster': clusters,
+        'Annual_Income': incomes,
+        'Spending_Score': spending_scores,
+        'Average_Order_Value': order_values,
+        'Number_of_Orders': num_orders,
+        'Review_Score': review_scores,
+        'Age': ages,
+        'Device_Used': [devices[i % len(devices)] for i in range(n_samples)],
+        'Preferred_Payment_Method': [payments[i % len(payments)] for i in range(n_samples)],
+        'Product_Category': [products[i % len(products)] for i in range(n_samples)],
+        'Customer_Region': [regions[i % len(regions)] for i in range(n_samples)],
+        'Gender': [genders[i % len(genders)] for i in range(n_samples)]
     }
+    
     return pd.DataFrame(sample_data)
 
 # Load data
