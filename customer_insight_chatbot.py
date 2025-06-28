@@ -9,10 +9,12 @@ def load_data():
 
 df_clusters = load_data()
 
-# Initialize session state
+# Auto-generate today's topic
 today = datetime.datetime.now().strftime("%d %B %Y")
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+if "topics" not in st.session_state:
+    st.session_state.topics = {today: []}
+if "active_topic" not in st.session_state:
+    st.session_state.active_topic = today
 if "last_cluster" not in st.session_state:
     st.session_state.last_cluster = None
 if "last_product" not in st.session_state:
@@ -26,70 +28,120 @@ def get_cluster_info(cluster_id):
     st.session_state.last_cluster = cluster_id
     avg_income = subset['Annual_Income'].mean()
     avg_spend = subset['Spending_Score'].mean()
+    avg_order_value = subset['Average_Order_Value'].mean()
+    avg_orders = subset['Number_of_Orders'].mean()
+    avg_review = subset['Review_Score'].mean()
     avg_age = subset['Age'].mean()
+    top_device = subset['Device_Used'].mode()[0]
+    top_payment = subset['Preferred_Payment_Method'].mode()[0]
+    top_product = subset['Product_Category'].mode()[0]
     return (
-        f"Cluster {cluster_id} Overview:\n"
-        f"- Avg Income: ${avg_income:,.2f}\n"
-        f"- Spending Score: {avg_spend:.2f}\n"
-        f"- Avg Age: {avg_age:.1f} years"
+        f"### 🧠 Cluster {cluster_id} Overview\n"
+        f"- Average Income: ${avg_income:,.2f}\n"
+        f"- Spending Score: {avg_spend:.1f}\n"
+        f"- Avg Order Value: ${avg_order_value:.2f}\n"
+        f"- Orders per Customer: {avg_orders:.2f}\n"
+        f"- Average Review Score: {avg_review:.2f}\n"
+        f"- Age: {avg_age:.1f} years\n"
+        f"- Most used payment method: **{top_payment}**\n"
+        f"- Most used device: **{top_device}**\n"
+        f"- Common product: **{top_product}**"
     )
 
 def product_cluster_response(user_input):
+    user_input_lower = user_input.lower()
     product_categories = df_clusters['Product_Category'].unique()
+    matched_product = None
     for product in product_categories:
-        if product.lower() in user_input.lower():
+        if product.lower() in user_input_lower:
             matched_product = product
-            filtered = df_clusters[df_clusters['Product_Category'] == matched_product]
-            top_cluster = filtered['Cluster'].value_counts().idxmax()
-            count = filtered['Cluster'].value_counts().max()
-            st.session_state.last_cluster = top_cluster
-            st.session_state.last_product = matched_product
-            return f"Most customers who purchase {matched_product} are in Cluster {top_cluster} ({count} customers)."
+            break
+    if matched_product:
+        filtered = df_clusters[df_clusters['Product_Category'] == matched_product]
+        cluster_counts = filtered['Cluster'].value_counts().sort_values(ascending=False)
+        top_cluster = cluster_counts.idxmax()
+        count = cluster_counts.max()
+        st.session_state.last_cluster = top_cluster
+        st.session_state.last_product = matched_product
+        return (
+            f"💡 Customers who purchase **{matched_product}** the most are in **Cluster {top_cluster}** "
+            f"with **{count} customers**.\n\n"
+            f"You can ask: 'Tell me more about Cluster {top_cluster}' to learn about them."
+        )
     return None
 
-def follow_up_on_cluster(user_input):
+def follow_up_on_last_cluster(user_input):
+    msg = user_input.lower()
     cluster_id = st.session_state.last_cluster
     if cluster_id is None:
-        return "Please ask about a specific product or cluster first."
+        return None
     subset = df_clusters[df_clusters["Cluster"] == cluster_id]
-    msg = user_input.lower()
-    if "income" in msg:
-        return f"Average income in Cluster {cluster_id} is ${subset['Annual_Income'].mean():,.2f}."
-    elif "spending" in msg:
-        return f"Spending score in Cluster {cluster_id} is {subset['Spending_Score'].mean():.2f}."
-    elif "age" in msg:
-        return f"Average age in Cluster {cluster_id} is {subset['Age'].mean():.1f} years."
-    return "I'm not sure how to answer that. Try asking about income, age, or spending."
 
-def chatbot_response(user_input):
-    # Direct cluster query
-    if "cluster" in user_input.lower():
+    if "income" in msg or "salary" in msg:
+        return f"Average income in Cluster {cluster_id} is ${subset['Annual_Income'].mean():,.2f}."
+    elif "spend" in msg:
+        return f"Average spending score in Cluster {cluster_id} is {subset['Spending_Score'].mean():.2f}."
+    elif "order" in msg:
+        return f"Average number of orders in Cluster {cluster_id} is {subset['Number_of_Orders'].mean():.2f}."
+    elif "review" in msg:
+        return f"Average review score in Cluster {cluster_id} is {subset['Review_Score'].mean():.2f}."
+    elif "device" in msg:
+        return f"Most common device in Cluster {cluster_id} is **{subset['Device_Used'].mode().iloc[0]}**."
+    elif "region" in msg:
+        return f"Most customers in Cluster {cluster_id} are from **{subset['Customer_Region'].mode().iloc[0]}**."
+    elif "gender" in msg:
+        return f"Most customers in Cluster {cluster_id} are **{subset['Gender'].mode().iloc[0]}**."
+    return None
+
+def cluster_aware_response(user_input):
+    input_lower = user_input.lower()
+
+    if "cluster" in input_lower:
         for i in range(10):
-            if str(i) in user_input:
+            if f"{i}" in input_lower:
                 return get_cluster_info(i)
 
-    # Product to cluster query
-    response = product_cluster_response(user_input)
-    if response:
-        return response
+    if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower:
+        categories = df_clusters['Product_Category'].unique()
+        return "**Available Product Categories:**\n" + "\n".join(f"- {c}" for c in sorted(categories))
 
-    # Follow up
-    return follow_up_on_cluster(user_input)
+    if "payment" in input_lower:
+        return "**Top Payment Methods:**\n- Credit Card\n- Debit Card\n- PayPal"
+    if "device" in input_lower:
+        return "**Common Devices Used:**\n- Mobile\n- Desktop\n- Tablet"
+    if "delivery" in input_lower:
+        return "**Preferred Delivery Options:**\n- Express\n- Standard\n- Scheduled"
+    if "region" in input_lower:
+        return "**Customer Regions:**\n- North\n- South\n- East\n- West"
 
-# --- Streamlit UI ---
-st.set_page_config(layout="centered")
-st.title("🛍️ Simple Customer Chatbot")
+    product_response = product_cluster_response(user_input)
+    if product_response:
+        return product_response
 
-for sender, message in st.session_state.chat_history:
+    follow_up = follow_up_on_last_cluster(user_input)
+    if follow_up:
+        return follow_up
+
+    return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
+
+# --- Chat UI ---
+st.set_page_config(layout="wide")
+st.title("🛍️ Customer Insight Chatbot")
+st.markdown("Ask me about product segments, clusters, and spending trends.")
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+for sender, msg in st.session_state.chat_history:
     if sender == "user":
-        st.markdown(f"**You:** {message}")
+        st.markdown(f"**🧑 You:** {msg}")
     else:
-        st.markdown(f"**Bot:** {message}")
+        st.markdown(f"**🤖 Bot:** {msg}")
 
-with st.form("chat_form", clear_on_submit=True):
-    user_input = st.text_input("Ask me something about the customer data:", key="user_input")
-    submitted = st.form_submit_button("Send")
-    if submitted and user_input:
-        bot_reply = chatbot_response(user_input)
+user_input = st.text_input("Type your question here:", key="user_input")
+if st.button("Send"):
+    if user_input:
+        response = cluster_aware_response(user_input)
         st.session_state.chat_history.append(("user", user_input))
-        st.session_state.chat_history.append(("bot", bot_reply))
+        st.session_state.chat_history.append(("bot", response))
+        st.session_state.user_input = ""
