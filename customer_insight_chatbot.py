@@ -305,9 +305,9 @@ st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
 @st.cache_data
 def load_data():
     # This is a placeholder - replace with your actual data loading
-    # For demo purposes, creating sample data structure with 4 clusters
+    # For demo purposes, creating sample data structure with 5 clusters
     return pd.DataFrame({
-        'Cluster': [0, 1, 2, 3, 0, 1, 2, 3] * 60,
+        'Cluster': [0, 1, 2, 3, 4, 0, 1, 2, 3, 4] * 60,
         'Annual_Income': [45000, 65000, 85000, 105000, 125000, 50000, 70000, 90000, 110000, 130000] * 60,
         'Spending_Score': [15, 35, 55, 75, 95, 20, 40, 60, 80, 90] * 60,
         'Average_Order_Value': [80, 150, 220, 290, 360, 100, 180, 250, 320, 380] * 60,
@@ -410,7 +410,7 @@ def cluster_aware_response(user_input):
         # If just "cluster" or "clusters" is mentioned, show all available clusters
         if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
             cluster_info = "**Available Clusters:**\n\n"
-            for i in range(4):
+            for i in range(5):
                 cluster_info += f"• Cluster {i}\n\n"
             
             return cluster_info
