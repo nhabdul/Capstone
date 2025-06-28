@@ -304,22 +304,7 @@ st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
 # Load your data (replace with your actual data loading)
 @st.cache_data
 def load_data():
-    # This is a placeholder - replace with your actual data loading
-    # For demo purposes, creating sample data structure with 5 clusters
-    return pd.DataFrame({
-        'Cluster': [0, 1, 2, 3, 4, 0, 1, 2, 3, 4] * 60,
-        'Annual_Income': [45000, 65000, 85000, 105000, 125000, 50000, 70000, 90000, 110000, 130000] * 60,
-        'Spending_Score': [15, 35, 55, 75, 95, 20, 40, 60, 80, 90] * 60,
-        'Average_Order_Value': [80, 150, 220, 290, 360, 100, 180, 250, 320, 380] * 60,
-        'Number_of_Orders': [3, 7, 11, 15, 19, 5, 9, 13, 17, 21] * 60,
-        'Review_Score': [3.2, 3.7, 4.1, 4.4, 4.7, 3.5, 3.9, 4.2, 4.5, 4.8] * 60,
-        'Age': [22, 32, 42, 52, 62, 25, 35, 45, 55, 65] * 60,
-        'Device_Used': ['Mobile', 'Desktop', 'Tablet', 'Mobile', 'Desktop', 'Mobile', 'Tablet', 'Desktop', 'Mobile', 'Tablet'] * 60,
-        'Preferred_Payment_Method': ['Credit Card', 'PayPal', 'Debit Card', 'Apple Pay', 'Google Pay', 'Credit Card', 'PayPal', 'Debit Card', 'Apple Pay', 'Google Pay'] * 60,
-        'Product_Category': ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty', 'Electronics', 'Clothing', 'Books', 'Home'] * 60,
-        'Customer_Region': ['North', 'South', 'East', 'West', 'Central', 'North', 'South', 'East', 'West', 'Central'] * 60,
-        'Gender': ['Male', 'Female', 'Male', 'Female', 'Male', 'Female', 'Male', 'Female', 'Male', 'Female'] * 60
-    })
+    return pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
 
 # Load data
 df_clusters = load_data()
@@ -403,14 +388,14 @@ def cluster_aware_response(user_input):
     # Handle cluster queries
     if "cluster" in input_lower:
         # Check for specific cluster numbers
-        for i in range(4):  # Support clusters 0-3
+        for i in range(5):  # Support clusters 0-4
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
         
         # If just "cluster" or "clusters" is mentioned, show all available clusters
         if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
             cluster_info = "**Available Clusters:**\n\n"
-            for i in range(4):
+            for i in range(5):
                 cluster_info += f"• Cluster {i}\n\n"
             
             return cluster_info
@@ -540,6 +525,7 @@ with col2:
             • Product categories and customer preferences
             • Payment methods and device usage
             • Customer demographics and behavior
+        </div>
         """)
     
     # Add all messages to chat content
@@ -549,35 +535,18 @@ with col2:
         else:
             chat_content.append(f'<div class="bot-message">{message["content"]}</div>')
     
-    # Display everything inside the bordered container with smooth auto-scroll
-    st.markdown(f"""
-    <div class="chat-container" id="chatbox">
+    # Display everything inside the bordered container
+    st.markdown(f'''
+    <div class="chat-container">
         {"".join(chat_content)}
     </div>
-
-    <script>
-    function scrollToBottom() {{
-        const chatbox = document.getElementById("chatbox");
-        if (chatbox) {{
-            chatbox.scrollTo({{
-                top: chatbox.scrollHeight,
-                behavior: "smooth"
-            }});
-        }}
-    }}
-
-    window.addEventListener("load", scrollToBottom);
-
-    const chatbox = document.getElementById("chatbox");
-    if (chatbox) {{
-        const observer = new MutationObserver(scrollToBottom);
-        observer.observe(chatbox, {{
-            childList: true,
-            subtree: true
-        }});
-    }}
-    </script>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
+    
+    # Input area with custom styling - seamlessly connected to chat container
+    st.markdown('''
+    <div class="input-container">
+    </div>
+    ''', unsafe_allow_html=True)
     
     # Create input form that responds to Enter key
     with st.form(key="chat_form", clear_on_submit=True):
@@ -649,4 +618,3 @@ st.markdown("""
 - Try the quick action buttons for common queries
 - Ask about specific clusters (0-3), products, or customer behavior
 """)
-
