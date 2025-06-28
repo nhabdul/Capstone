@@ -47,7 +47,6 @@ def get_theme_css(dark_mode=False):
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         font-size: 16px;
         line-height: 1.6;
-        scroll-behavior: smooth;
     }
     
     /* Message styling */
@@ -143,7 +142,7 @@ def get_theme_css(dark_mode=False):
         --text-color: #333333;
         --border-color: #e0e0e0;
         --user-color: #007bff;
-        --bot-color: #333333;
+        --bot-color: #ffffff;
         --container-bg: #f1f3f4;
         --input-bg: #ffffff;
     }
@@ -167,7 +166,6 @@ def get_theme_css(dark_mode=False):
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         font-size: 16px;
         line-height: 1.6;
-        scroll-behavior: smooth;
     }
     
     /* Message styling */
@@ -307,20 +305,20 @@ st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
 @st.cache_data
 def load_data():
     # This is a placeholder - replace with your actual data loading
-    # For demo purposes, creating sample data structure with 4 clusters (0-3)
+    # For demo purposes, creating sample data structure with 4 clusters
     return pd.DataFrame({
-        'Cluster': [0, 1, 2, 3, 0, 1, 2, 3] * 75,
-        'Annual_Income': [45000, 65000, 85000, 105000, 50000, 70000, 90000, 110000] * 75,
-        'Spending_Score': [15, 35, 55, 75, 20, 40, 60, 80] * 75,
-        'Average_Order_Value': [80, 150, 220, 290, 100, 180, 250, 320] * 75,
-        'Number_of_Orders': [3, 7, 11, 15, 5, 9, 13, 17] * 75,
-        'Review_Score': [3.2, 3.7, 4.1, 4.4, 3.5, 3.9, 4.2, 4.5] * 75,
-        'Age': [22, 32, 42, 52, 25, 35, 45, 55] * 75,
-        'Device_Used': ['Mobile', 'Desktop', 'Tablet', 'Mobile', 'Mobile', 'Tablet', 'Desktop', 'Mobile'] * 75,
-        'Preferred_Payment_Method': ['Credit Card', 'PayPal', 'Debit Card', 'Apple Pay', 'Credit Card', 'PayPal', 'Debit Card', 'Apple Pay'] * 75,
-        'Product_Category': ['Electronics', 'Clothing', 'Books', 'Home', 'Beauty', 'Electronics', 'Clothing', 'Books'] * 75,
-        'Customer_Region': ['North', 'South', 'East', 'West', 'North', 'South', 'East', 'West'] * 75,
-        'Gender': ['Male', 'Female', 'Male', 'Female', 'Female', 'Male', 'Female', 'Male'] * 75
+        'Cluster': [0, 1, 2, 3, 0, 1, 2, 3] * 60,
+        'Annual_Income': [45000, 65000, 85000, 105000, 125000, 50000, 70000, 90000, 110000, 130000] * 60,
+        'Spending_Score': [15, 35, 55, 75, 95, 20, 40, 60, 80, 90] * 60,
+        'Average_Order_Value': [80, 150, 220, 290, 360, 100, 180, 250, 320, 380] * 60,
+        'Number_of_Orders': [3, 7, 11, 15, 19, 5, 9, 13, 17, 21] * 60,
+        'Review_Score': [3.2, 3.7, 4.1, 4.4, 4.7, 3.5, 3.9, 4.2, 4.5, 4.8] * 60,
+        'Age': [22, 32, 42, 52, 62, 25, 35, 45, 55, 65] * 60,
+        'Device_Used': ['Mobile', 'Desktop', 'Tablet', 'Mobile', 'Desktop', 'Mobile', 'Tablet', 'Desktop', 'Mobile', 'Tablet'] * 60,
+        'Preferred_Payment_Method': ['Credit Card', 'PayPal', 'Debit Card', 'Apple Pay', 'Google Pay', 'Credit Card', 'PayPal', 'Debit Card', 'Apple Pay', 'Google Pay'] * 60,
+        'Product_Category': ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty', 'Electronics', 'Clothing', 'Books', 'Home'] * 60,
+        'Customer_Region': ['North', 'South', 'East', 'West', 'Central', 'North', 'South', 'East', 'West', 'Central'] * 60,
+        'Gender': ['Male', 'Female', 'Male', 'Female', 'Male', 'Female', 'Male', 'Female', 'Male', 'Female'] * 60
     })
 
 # Load data
@@ -404,15 +402,15 @@ def cluster_aware_response(user_input):
 
     # Handle cluster queries
     if "cluster" in input_lower:
-        # Check for specific cluster numbers (0-3 only)
-        for i in range(4):  # Support clusters 0-3
+        # Check for specific cluster numbers
+        for i in range(5):  # Support clusters 0-4
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
         
         # If just "cluster" or "clusters" is mentioned, show all available clusters
         if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
             cluster_info = "**Available Clusters:**\n\n"
-            for i in range(4):  # Only show clusters 0-3
+            for i in range(4):
                 cluster_info += f"• Cluster {i}\n\n"
             
             return cluster_info
@@ -465,19 +463,6 @@ def cluster_aware_response(user_input):
         return follow_up
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
-
-# Function to add auto-scroll JavaScript
-def add_auto_scroll():
-    st.markdown("""
-    <script>
-    setTimeout(function() {
-        var chatContainer = parent.document.querySelector('.chat-container');
-        if (chatContainer) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-    }, 100);
-    </script>
-    """, unsafe_allow_html=True)
 
 # --- Main App Layout ---
 # Add theme toggle
@@ -555,7 +540,6 @@ with col2:
             • Product categories and customer preferences
             • Payment methods and device usage
             • Customer demographics and behavior
-        </div>
         """)
     
     # Add all messages to chat content
@@ -567,7 +551,7 @@ with col2:
     
     # Display everything inside the bordered container
     st.markdown(f'''
-    <div class="chat-container" id="chat-container">
+    <div class="chat-container">
         {"".join(chat_content)}
     </div>
     ''', unsafe_allow_html=True)
@@ -638,19 +622,6 @@ if submit_button and user_input:
     
     # Rerun to update the display
     st.rerun()
-
-# Add auto-scroll after new messages
-if st.session_state.messages:
-    st.markdown("""
-    <script>
-    setTimeout(function() {
-        var chatContainer = parent.document.querySelector('.chat-container');
-        if (chatContainer) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-    }, 200);
-    </script>
-    """, unsafe_allow_html=True)
 
 # Footer with instructions
 st.markdown("---")
