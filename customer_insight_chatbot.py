@@ -21,7 +21,7 @@ def get_theme_css(dark_mode=False):
         --text-color: #ffffff;
         --border-color: #444444;
         --user-color: #4a9eff;
-        --bot-color: #e0e0e0;
+        --bot-color: #ffffff;
         --container-bg: #2d2d2d;
         --input-bg: #333333;
     }
@@ -142,7 +142,7 @@ def get_theme_css(dark_mode=False):
         --text-color: #333333;
         --border-color: #e0e0e0;
         --user-color: #007bff;
-        --bot-color: #2c3e50;
+        --bot-color: #ffffff;
         --container-bg: #f1f3f4;
         --input-bg: #ffffff;
     }
@@ -340,15 +340,15 @@ def get_cluster_info(cluster_id):
     top_payment = subset['Preferred_Payment_Method'].mode()[0]
     top_product = subset['Product_Category'].mode()[0]
     return (
-        f"### 🧠 Cluster {cluster_id} Overview\n"
-        f"• Average Income: ${avg_income:,.2f}\n"
-        f"• Spending Score: {avg_spend:.1f}\n"
-        f"• Avg Order Value: ${avg_order_value:.2f}\n"
-        f"• Orders per Customer: {avg_orders:.2f}\n"
-        f"• Average Review Score: {avg_review:.2f}\n"
-        f"• Age: {avg_age:.1f} years\n"
-        f"• Most used payment method: **{top_payment}**\n"
-        f"• Most used device: **{top_device}**\n"
+        f"### 🧠 Cluster {cluster_id} Overview\n\n"
+        f"• Average Income: ${avg_income:,.2f}\n\n"
+        f"• Spending Score: {avg_spend:.1f}\n\n"
+        f"• Avg Order Value: ${avg_order_value:.2f}\n\n"
+        f"• Orders per Customer: {avg_orders:.2f}\n\n"
+        f"• Average Review Score: {avg_review:.2f}\n\n"
+        f"• Age: {avg_age:.1f} years\n\n"
+        f"• Most used payment method: **{top_payment}**\n\n"
+        f"• Most used device: **{top_device}**\n\n"
         f"• Common product: **{top_product}**"
     )
 
@@ -411,7 +411,7 @@ def cluster_aware_response(user_input):
         if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
             cluster_info = "**Available Clusters:**\n\n"
             for i in range(5):
-                cluster_info += f"• Cluster {i}\n"
+                cluster_info += f"• Cluster {i}\n\n"
             
             return cluster_info
 
@@ -420,7 +420,7 @@ def cluster_aware_response(user_input):
         category_info = "**Available Product Categories:**\n\n"
         
         for category in categories:
-            category_info += f"• {category}\n"
+            category_info += f"• {category}\n\n"
         
         return category_info
 
@@ -429,7 +429,7 @@ def cluster_aware_response(user_input):
         payment_info = "**Available Payment Methods:**\n\n"
         
         for payment in payments:
-            payment_info += f"• {payment}\n"
+            payment_info += f"• {payment}\n\n"
         
         return payment_info
     
@@ -438,19 +438,19 @@ def cluster_aware_response(user_input):
         device_info = "**Customer Devices:**\n\n"
         
         for device in devices:
-            device_info += f"• {device}\n"
+            device_info += f"• {device}\n\n"
         
         return device_info
     
     if "delivery" in input_lower:
-        return "**Preferred Delivery Options:**\n\n• **Express** - Fast delivery (1-2 days)\n• **Standard** - Regular delivery (3-5 days)\n• **Scheduled** - Choose your delivery time"
+        return "**Preferred Delivery Options:**\n\n• **Express** - Fast delivery (1-2 days)\n\n• **Standard** - Regular delivery (3-5 days)\n\n• **Scheduled** - Choose your delivery time"
     
     if "region" in input_lower:
         regions = sorted(df_clusters['Customer_Region'].unique())
         region_info = "**Customer Regions:**\n\n"
         
         for region in regions:
-            region_info += f"• {region}\n"
+            region_info += f"• {region}\n\n"
         
         return region_info
 
