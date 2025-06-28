@@ -550,7 +550,7 @@ with col2:
             chat_content.append(f'<div class="bot-message">{message["content"]}</div>')
     
     # Display everything inside the bordered container with smooth auto-scroll
-    st.markdown(f'''
+    st.markdown(f"""
     <div class="chat-container" id="chatbox">
         {"".join(chat_content)}
     </div>
@@ -577,7 +577,7 @@ with col2:
         }});
     }}
     </script>
-    ''', unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     
     # Create input form that responds to Enter key
     with st.form(key="chat_form", clear_on_submit=True):
