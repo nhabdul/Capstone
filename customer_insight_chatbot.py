@@ -132,15 +132,25 @@ st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- Form (Enter works, input clears, no error) ---
-with st.form("chat_form", clear_on_submit=True):
-    user_input = st.text_input("Type your question here...")
+# --- Input Form (Enter works, output shows immediately) ---
+with st.form("chat_form", clear_on_submit=False):
+    user_input = st.text_input("Type your question here...", key="chat_input")
     submitted = st.form_submit_button("Send")
 
-    if submitted and user_input.strip():
-        st.session_state.chat_history.append(("You", user_input))
-        reply = cluster_aware_response(user_input)
-        st.session_state.chat_history.append(("Bot", reply))
+# --- Process submission AFTER form ---
+if submitted and st.session_state.chat_input.strip():
+    user_msg = st.session_state.chat_input
+    st.session_state.chat_history.append(("You", user_msg))
+    bot_reply = cluster_aware_response(user_msg)
+    st.session_state.chat_history.append(("Bot", bot_reply))
+
+    # Flag to clear on next render
+    st.session_state.clear_input = True
+
+# --- Clear chat_input using the flag ---
+if st.session_state.get("clear_input"):
+    st.session_state.chat_input = ""
+    st.session_state.clear_input = False
 
 # --- Handle submission outside the form ---
 if submitted and st.session_state.chat_input.strip():
