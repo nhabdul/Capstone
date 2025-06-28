@@ -30,6 +30,7 @@ def get_theme_css(dark_mode=False):
     .stApp {
         background-color: var(--bg-color);
         color: var(--text-color);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
     /* Chat container styling */
@@ -43,6 +44,9 @@ def get_theme_css(dark_mode=False):
         min-height: 400px;
         max-height: 600px;
         overflow-y: auto;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
     }
     
     /* Message styling */
@@ -54,6 +58,8 @@ def get_theme_css(dark_mode=False):
         text-align: right;
         word-wrap: break-word;
         font-weight: 600;
+        font-size: 16px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
     .bot-message {
@@ -62,6 +68,9 @@ def get_theme_css(dark_mode=False):
         padding: 10px 0;
         margin: 5px 0;
         word-wrap: break-word;
+        font-size: 16px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
     }
     
     /* Input area styling */
@@ -86,6 +95,7 @@ def get_theme_css(dark_mode=False):
         font-weight: bold;
         color: var(--text-color);
         margin-bottom: 10px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
     .history-item {
@@ -96,6 +106,7 @@ def get_theme_css(dark_mode=False):
         border-left: 3px solid var(--user-color);
         cursor: pointer;
         transition: background-color 0.3s;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
     .history-item:hover {
@@ -136,6 +147,11 @@ def get_theme_css(dark_mode=False):
         --input-bg: #ffffff;
     }
     
+    /* Main app styling */
+    .stApp {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
     /* Chat container styling */
     .chat-container {
         border: 2px solid var(--border-color);
@@ -147,6 +163,9 @@ def get_theme_css(dark_mode=False):
         min-height: 400px;
         max-height: 600px;
         overflow-y: auto;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
     }
     
     /* Message styling */
@@ -158,6 +177,8 @@ def get_theme_css(dark_mode=False):
         text-align: right;
         word-wrap: break-word;
         font-weight: 600;
+        font-size: 16px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
     .bot-message {
@@ -166,6 +187,9 @@ def get_theme_css(dark_mode=False):
         padding: 10px 0;
         margin: 5px 0;
         word-wrap: break-word;
+        font-size: 16px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
     }
     
     /* Input area styling */
@@ -190,6 +214,7 @@ def get_theme_css(dark_mode=False):
         font-weight: bold;
         color: var(--text-color);
         margin-bottom: 10px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
     .history-item {
@@ -200,6 +225,7 @@ def get_theme_css(dark_mode=False):
         border-left: 3px solid var(--user-color);
         cursor: pointer;
         transition: background-color 0.3s;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
     .history-item:hover {
@@ -383,71 +409,49 @@ def cluster_aware_response(user_input):
         
         # If just "cluster" or "clusters" is mentioned, show all available clusters
         if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
-            cluster_info = "**Available Customer Clusters:**\n\n"
+            cluster_info = "* **Clusters**:\n"
             for i in range(5):
-                subset = df_clusters[df_clusters['Cluster'] == i]
-                avg_income = subset['Annual_Income'].mean()
-                spending_score = subset['Spending_Score'].mean()
-                cluster_info += f"• **Cluster {i}** - Avg Income: ${avg_income:,.0f}, Spending Score: {spending_score:.1f}\n"
+                cluster_info += f"   * Cluster {i}\n"
             
-            cluster_info += "\n*Type 'Tell me about cluster X' (where X is 0-4) to get detailed information*"
             return cluster_info
 
     if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower or "show me product categories" in input_lower:
         categories = sorted(df_clusters['Product_Category'].unique())
-        category_info = "**Available Product Categories:**\n\n"
+        category_info = "* **Product Categories**:\n"
         
         for category in categories:
-            # Find which cluster buys this product most
-            filtered = df_clusters[df_clusters['Product_Category'] == category]
-            if not filtered.empty:
-                top_cluster = filtered['Cluster'].value_counts().idxmax()
-                count = filtered['Cluster'].value_counts().max()
-                category_info += f"• **{category}** - Most purchased by Cluster {top_cluster} ({count} customers)\n"
+            category_info += f"   * {category}\n"
         
-        category_info += "\n*Ask about any specific product category to get detailed customer analysis*"
         return category_info
 
     if "payment" in input_lower or "what payment methods are available" in input_lower:
         payments = sorted(df_clusters['Preferred_Payment_Method'].unique())
-        payment_info = "**Available Payment Methods:**\n\n"
+        payment_info = "* **Payment Methods**:\n"
         
         for payment in payments:
-            # Count usage across clusters
-            usage_count = len(df_clusters[df_clusters['Preferred_Payment_Method'] == payment])
-            most_used_cluster = df_clusters[df_clusters['Preferred_Payment_Method'] == payment]['Cluster'].value_counts().idxmax()
-            payment_info += f"• **{payment}** - Used by {usage_count} customers, most popular in Cluster {most_used_cluster}\n"
+            payment_info += f"   * {payment}\n"
         
-        payment_info += "\n*Ask about specific payment methods to see detailed usage patterns*"
         return payment_info
     
     if "device" in input_lower or "what devices do customers use" in input_lower:
         devices = sorted(df_clusters['Device_Used'].unique())
-        device_info = "**Common Devices Used:**\n\n"
+        device_info = "* **Devices**:\n"
         
         for device in devices:
-            # Count usage and find most common cluster
-            usage_count = len(df_clusters[df_clusters['Device_Used'] == device])
-            most_used_cluster = df_clusters[df_clusters['Device_Used'] == device]['Cluster'].value_counts().idxmax()
-            device_info += f"• **{device}** - Used by {usage_count} customers, most common in Cluster {most_used_cluster}\n"
+            device_info += f"   * {device}\n"
         
-        device_info += "\n*Ask about specific devices to see detailed usage statistics across customer segments*"
         return device_info
     
     if "delivery" in input_lower:
-        return "**Preferred Delivery Options:**\n\n• **Express** - Fast delivery (1-2 days)\n• **Standard** - Regular delivery (3-5 days)\n• **Scheduled** - Choose your delivery time\n\n*Ask about specific delivery preferences to see customer behavior patterns*"
+        return "**Preferred Delivery Options:**\n\n• **Express** - Fast delivery (1-2 days)\n• **Standard** - Regular delivery (3-5 days)\n• **Scheduled** - Choose your delivery time"
     
     if "region" in input_lower:
         regions = sorted(df_clusters['Customer_Region'].unique())
-        region_info = "**Customer Regions:**\n\n"
+        region_info = "* **Regions**:\n"
         
         for region in regions:
-            # Count customers and find dominant cluster
-            customer_count = len(df_clusters[df_clusters['Customer_Region'] == region])
-            dominant_cluster = df_clusters[df_clusters['Customer_Region'] == region]['Cluster'].value_counts().idxmax()
-            region_info += f"• **{region}** - {customer_count} customers, dominated by Cluster {dominant_cluster}\n"
+            region_info += f"   * {region}\n"
         
-        region_info += "\n*Ask about specific regions to see customer distribution and behavior patterns*"
         return region_info
 
     product_response = product_cluster_response(user_input)
