@@ -60,38 +60,32 @@ def get_css():
 
 <script>
 function scrollToBottom() {
-    const chatContainer = document.querySelector('.chat-container');
-    if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-}
-
-// Auto-scroll when new messages are added
-const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        if (mutation.type === 'childList') {
-            setTimeout(scrollToBottom, 100);
+    setTimeout(function() {
+        const chatContainer = document.querySelector('.chat-container');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-    });
-});
+    }, 100);
+}
 
-// Start observing when the chat container is available
-function startObserving() {
+// Call scroll function periodically to ensure it works
+setInterval(function() {
     const chatContainer = document.querySelector('.chat-container');
-    if (chatContainer) {
-        observer.observe(chatContainer, { childList: true, subtree: true });
-        scrollToBottom(); // Initial scroll
-    } else {
-        setTimeout(startObserving, 100);
+    if (chatContainer && chatContainer.scrollHeight > chatContainer.clientHeight) {
+        const isAtBottom = chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 1;
+        if (!isAtBottom) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
     }
-}
+}, 500);
 
-// Start observing after DOM is loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startObserving);
-} else {
-    startObserving();
-}
+// Force scroll on any DOM change
+new MutationObserver(function() {
+    scrollToBottom();
+}).observe(document.body, { childList: true, subtree: true });
+
+// Initial scroll
+scrollToBottom();
 </script>
 """
 
@@ -161,26 +155,27 @@ def cluster_aware_response(user_input):
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
         
-        if input_lower.strip() in ["cluster", "clusters"]:
+        # Show available clusters when asked
+        if "available" in input_lower or "show" in input_lower or input_lower.strip() in ["cluster", "clusters"]:
             return "**Available Clusters:** 0, 1, 2, 3\n\nAsk about any specific cluster!"
 
     # Handle product categories
-    if "product" in input_lower or "categories" in input_lower:
+    if ("product" in input_lower and "categor" in input_lower) or "show me product categories" in input_lower:
         categories = sorted(df_clusters['Product_Category'].unique())
         return "**Product Categories:**\n" + "\n".join([f"• {cat}" for cat in categories])
 
     # Handle payment methods
-    if "payment" in input_lower:
+    if "payment" in input_lower and ("method" in input_lower or "available" in input_lower):
         payments = sorted(df_clusters['Preferred_Payment_Method'].unique())
         return "**Payment Methods:**\n" + "\n".join([f"• {pay}" for pay in payments])
     
     # Handle devices
-    if "device" in input_lower:
+    if "device" in input_lower and ("customer" in input_lower or "use" in input_lower):
         devices = sorted(df_clusters['Device_Used'].unique())
         return "**Customer Devices:**\n" + "\n".join([f"• {dev}" for dev in devices])
     
     # Handle regions
-    if "region" in input_lower:
+    if "region" in input_lower and ("customer" in input_lower or "show" in input_lower):
         regions = sorted(df_clusters['Customer_Region'].unique())
         return "**Customer Regions:**\n" + "\n".join([f"• {reg}" for reg in regions])
 
@@ -288,7 +283,7 @@ with col2:
     if st.session_state.messages:
         st.markdown(f"**Conversation:** {len(st.session_state.messages)//2} exchanges")
 
-# Process user input
+# Process user input (including from quick action buttons)
 if submit_button and user_input:
     # Add user message
     st.session_state.messages.append({"role": "user", "content": user_input})
@@ -298,6 +293,14 @@ if submit_button and user_input:
     st.session_state.messages.append({"role": "assistant", "content": bot_response})
     
     # Rerun to update display and trigger auto-scroll
+    st.rerun()
+
+# Handle quick action buttons
+if 'user_input' in locals() and user_input and not submit_button:
+    # This handles when quick action buttons set user_input
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    bot_response = cluster_aware_response(user_input)
+    st.session_state.messages.append({"role": "assistant", "content": bot_response})
     st.rerun()
 
 # Footer
