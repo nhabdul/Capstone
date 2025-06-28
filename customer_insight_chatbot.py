@@ -124,7 +124,26 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- Sidebar with topic history ---
+# --- UI Setup ---
+st.set_page_config(layout="wide")
+st.markdown("""
+    <style>
+        .scroll-container {
+            height: 70vh;
+            overflow-y: auto;
+            padding: 1rem;
+            border: 1px solid white;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            margin-bottom: 1rem;
+        }
+        .stTextInput>div>div>input {
+            border: 1px solid white !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Sidebar Chat History ---
 st.sidebar.title("📂 Chat History")
 topic_choice = st.sidebar.radio("Choose a topic:", list(st.session_state.topics.keys()))
 if topic_choice != st.session_state.active_topic:
@@ -135,52 +154,13 @@ if st.sidebar.button("➕ Add Topic") and new_topic:
     st.session_state.topics[new_topic] = []
     st.session_state.active_topic = new_topic
 
-# --- Chat UI ---
-st.set_page_config(layout="wide")
-st.markdown("""
-    <style>
-        .chat-container {
-            height: 70vh;
-            overflow-y: auto;
-            padding: 1rem;
-            border: 1px solid white;
-            border-radius: 10px;
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-        .chat-input {
-            display: flex;
-            align-items: center;
-            padding-top: 1rem;
-        }
-        .chat-input input[type='text'] {
-            flex: 1;
-            padding: 0.5rem;
-            font-size: 16px;
-            border-radius: 10px;
-            border: 1px solid white;
-            background: transparent;
-            color: white;
-        }
-        .chat-input button {
-            margin-left: 0.5rem;
-            padding: 0.5rem 1rem;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
+# --- Chat Display ---
 st.title("🛍️ Customer Insight Chatbot")
 st.markdown("Ask me about product segments, clusters, and spending trends.")
-
 chat_history = st.session_state.topics[st.session_state.active_topic]
 
-# Show conversation
 with st.container():
-    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+    st.markdown("<div class='scroll-container'>", unsafe_allow_html=True)
     for sender, msg in chat_history:
         if sender == "user":
             st.markdown(f"**🧑 You:** {msg}")
@@ -188,8 +168,7 @@ with st.container():
             st.markdown(f"**🤖 Bot:** {msg}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Input + send button UI
-
+# --- Input Box (Single Only) ---
 def submit():
     user_input = st.session_state.user_input
     if user_input:
@@ -198,11 +177,4 @@ def submit():
         chat_history.append(("bot", reply))
         st.session_state.user_input = ""
 
-with st.container():
-    st.markdown("""
-        <div class='chat-input'>
-            <input type='text' id='chatbox' name='user_input' placeholder='Type your question here...' onkeydown="if(event.key === 'Enter'){document.getElementById('submit-btn').click();}" />
-            <button id='submit-btn'>Send</button>
-        </div>
-    """, unsafe_allow_html=True)
-    st.text_input("", key="user_input", on_change=submit, label_visibility="collapsed")
+st.text_input("Type your question here...", key="user_input", on_change=submit)
