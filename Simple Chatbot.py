@@ -3,10 +3,10 @@ import streamlit as st
 import pandas as pd
 import re
 
-# Load cluster summary from uploaded CSV or preprocessed DataFrame
+# Load data
 df = pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
 
-# Compute summary only once
+# Summarize by cluster
 cluster_summary = df.groupby("Cluster").agg({
     "Annual_Income": "mean",
     "Spending_Score": "mean",
@@ -19,7 +19,7 @@ cluster_summary = df.groupby("Cluster").agg({
     "Age": "mean"
 }).round(2)
 
-# Category sets for general questions
+# Categories
 product_categories = sorted(df["Product_Category"].dropna().unique())
 payment_methods = sorted(df["Preferred_Payment_Method"].dropna().unique())
 delivery_options = sorted(df["Preferred_Delivery_Option"].dropna().unique())
@@ -28,7 +28,7 @@ customer_regions = sorted(df["Customer_Region"].dropna().unique())
 age_groups = sorted(df["Age_Group"].dropna().unique())
 clusters = sorted(df["Cluster"].dropna().unique())
 
-# Free-text response function
+# Bot response
 def chatbot_response(user_input):
     user_input = user_input.lower()
     cluster_match = re.search(r'cluster\s*(\d+)', user_input)
@@ -65,23 +65,58 @@ def chatbot_response(user_input):
     else:
         return "🤖 I'm not sure how to help with that. Try asking about a specific cluster or customer attributes."
 
-# Streamlit UI with chat history
+# UI setup
 st.set_page_config(page_title="Customer Insight Chatbot", layout="centered")
-st.title("💬 Customer Insight Chatbot")
+st.markdown("<h1 style='text-align:center;'>💬 Customer Insight Chatbot</h1>", unsafe_allow_html=True)
 
-# Session state for chat history
+# Chat memory
 if "history" not in st.session_state:
     st.session_state.history = []
 
-user_input = st.text_input("Ask a question about your customers:")
+# Scrollable container style
+st.markdown("""
+<style>
+.chat-container {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    margin-bottom: 10px;
+}
+.user-msg {
+    color: #000;
+    font-weight: bold;
+}
+.bot-msg {
+    color: #333;
+    background-color: #e0e0e0;
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+</style>
+""", unsafe_allow_html=True)
 
-if user_input:
+# Input and response
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("Type your question:")
+    submit = st.form_submit_button("Send")
+
+if submit and user_input:
     response = chatbot_response(user_input)
-    st.session_state.history.append((user_input, response))
+    st.session_state.history.append(("You", user_input))
+    st.session_state.history.append(("Bot", response))
 
-# Display chat history
-for q, a in st.session_state.history:
-    st.markdown(f"**You:** {q}")
-    st.markdown(f"{a}")
+# Display chat
+st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+for sender, msg in st.session_state.history:
+    if sender == "You":
+        st.markdown(f'<div class="user-msg">🧑‍💼 <b>You:</b> {msg}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="bot-msg">🤖 <b>Bot:</b><br>{msg}</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-st.caption("Ask about clusters, product categories, devices, payment methods, etc.")
+st.caption("Ask about clusters, products, devices, payments, etc.")
