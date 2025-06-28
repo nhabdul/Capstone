@@ -119,6 +119,8 @@ if 'last_cluster' not in st.session_state:
     st.session_state.last_cluster = None
 if 'last_product' not in st.session_state:
     st.session_state.last_product = None
+if 'pending_user_input' not in st.session_state:
+    st.session_state.pending_user_input = None
 
 # --- App UI ---
 st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
@@ -130,15 +132,20 @@ st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# Input
+# Input form
 with st.form("chat_form", clear_on_submit=True):
     user_input = st.text_input("Type your question here...")
     submitted = st.form_submit_button("Send")
+    if submitted and user_input:
+        st.session_state.pending_user_input = user_input  # Save temporarily
 
-if submitted and user_input:
+# --- Handle input after form submission ---
+if st.session_state.pending_user_input:
+    user_input = st.session_state.pending_user_input
     st.session_state.chat_history.append(("You", user_input))
     reply = cluster_aware_response(user_input)
     st.session_state.chat_history.append(("Bot", reply))
+    st.session_state.pending_user_input = None  # Clear temp input
 
 # Clear chat button
 if st.button("🗑️ Clear Chat"):
