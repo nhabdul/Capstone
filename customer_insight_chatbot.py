@@ -1,14 +1,132 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
-# --- Load Data ---
+# Set page config for better layout
+st.set_page_config(
+    page_title="Customer Analytics Chatbot",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for styling
+st.markdown("""
+<style>
+    /* Chat container styling */
+    .chat-container {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        margin: 10px 0;
+        min-height: 400px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    /* Message styling */
+    .user-message {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 18px;
+        margin: 5px 0;
+        margin-left: 20%;
+        text-align: right;
+        word-wrap: break-word;
+    }
+    
+    .bot-message {
+        background-color: #e9ecef;
+        color: #333;
+        padding: 10px 15px;
+        border-radius: 18px;
+        margin: 5px 0;
+        margin-right: 20%;
+        word-wrap: break-word;
+    }
+    
+    /* Input area styling */
+    .input-container {
+        border: 2px solid #007bff;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 10px 0;
+        background-color: white;
+    }
+    
+    /* Sidebar styling */
+    .sidebar-header {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .history-item {
+        background-color: #f1f3f4;
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 5px;
+        border-left: 3px solid #007bff;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .history-item:hover {
+        background-color: #e3f2fd;
+    }
+    
+    /* Remove streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .user-message, .bot-message {
+            margin-left: 5%;
+            margin-right: 5%;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize session state
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'last_cluster' not in st.session_state:
+    st.session_state.last_cluster = None
+if 'last_product' not in st.session_state:
+    st.session_state.last_product = None
+
+# Load your data (replace with your actual data loading)
 @st.cache_data
 def load_data():
-    return pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
+    # This is a placeholder - replace with your actual data loading
+    # For demo purposes, creating sample data structure
+    return pd.DataFrame({
+        'Cluster': [0, 1, 2, 0, 1, 2] * 100,
+        'Annual_Income': [50000, 75000, 100000, 55000, 80000, 95000] * 100,
+        'Spending_Score': [20, 50, 80, 25, 55, 75] * 100,
+        'Average_Order_Value': [100, 200, 300, 150, 250, 280] * 100,
+        'Number_of_Orders': [5, 10, 15, 6, 12, 14] * 100,
+        'Review_Score': [3.5, 4.0, 4.5, 3.8, 4.2, 4.3] * 100,
+        'Age': [25, 35, 45, 28, 38, 42] * 100,
+        'Device_Used': ['Mobile', 'Desktop', 'Tablet', 'Mobile', 'Desktop', 'Mobile'] * 100,
+        'Preferred_Payment_Method': ['Credit Card', 'PayPal', 'Debit Card', 'Credit Card', 'PayPal', 'Credit Card'] * 100,
+        'Product_Category': ['Electronics', 'Clothing', 'Books', 'Electronics', 'Home', 'Sports'] * 100,
+        'Customer_Region': ['North', 'South', 'East', 'West', 'North', 'South'] * 100,
+        'Gender': ['Male', 'Female', 'Male', 'Female', 'Male', 'Female'] * 100
+    })
 
+# Load data
 df_clusters = load_data()
 
-# --- Helper Functions ---
+# --- Helper Functions (from your provided code) ---
 def get_cluster_info(cluster_id):
     subset = df_clusters[df_clusters['Cluster'] == cluster_id]
     if subset.empty:
@@ -112,48 +230,135 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- Session State Initialization ---
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "last_cluster" not in st.session_state:
-    st.session_state.last_cluster = None
-if "last_product" not in st.session_state:
-    st.session_state.last_product = None
-if "chat_input" not in st.session_state:
-    st.session_state.chat_input = ""
-if "clear_next" not in st.session_state:
-    st.session_state.clear_next = False
+# --- Main App Layout ---
+st.title("🤖 Customer Analytics Chatbot")
+st.markdown("Ask me about customer clusters, products, and spending patterns!")
 
-# --- App UI ---
-st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
-st.title("🛍️ Customer Insight Chatbot")
-st.markdown("Ask me about product segments, customer clusters, or behavior insights!")
+# Create layout with sidebar and main content
+col1, col2 = st.columns([1, 3])
 
-# --- Display Chat History ---
-st.markdown("### 💬 Chat History")
-for sender, message in st.session_state.chat_history:
-    st.markdown(f"**{sender}:** {message}")
+# Sidebar for chat history
+with col1:
+    st.markdown('<div class="sidebar-header">💬 Chat History</div>', unsafe_allow_html=True)
+    
+    # Add clear history button
+    if st.button("🗑️ Clear History", key="clear_history"):
+        st.session_state.messages = []
+        st.session_state.chat_history = []
+        st.rerun()
+    
+    # Display chat history
+    if st.session_state.chat_history:
+        for i, (timestamp, user_msg, bot_msg) in enumerate(reversed(st.session_state.chat_history)):
+            with st.expander(f"💬 {timestamp}", expanded=False):
+                st.markdown(f"**You:** {user_msg[:50]}...")
+                st.markdown(f"**Bot:** {bot_msg[:50]}...")
+                if st.button("🔄 Reload", key=f"reload_{i}"):
+                    # Add the conversation back to current messages
+                    st.session_state.messages.append({"role": "user", "content": user_msg})
+                    st.session_state.messages.append({"role": "assistant", "content": bot_msg})
+                    st.rerun()
 
-# --- Input ---
-user_input = st.text_input("Type your question here...", value=st.session_state.chat_input, key="chat_input")
+# Main chat area
+with col2:
+    # Chat container with custom styling
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    
+    # Display chat messages
+    if not st.session_state.messages:
+        st.markdown("""
+        <div class="bot-message">
+            👋 Hello! I'm your Customer Analytics Assistant. I can help you explore customer data and clusters.
+            <br><br>
+            Try asking me:
+            <br>• "Tell me about cluster 1"
+            <br>• "Which customers buy electronics?"
+            <br>• "Show me product categories"
+            <br>• "What payment methods are popular?"
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Display all messages
+    for message in st.session_state.messages:
+        if message["role"] == "user":
+            st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Input area with custom styling
+    st.markdown('<div class="input-container">', unsafe_allow_html=True)
+    
+    # Create input form that responds to Enter key
+    with st.form(key="chat_form", clear_on_submit=True):
+        user_input = st.text_input(
+            "Type your message here...",
+            key="user_input",
+            placeholder="Ask me about clusters, products, or customer data...",
+            label_visibility="collapsed"
+        )
+        
+        col_send, col_examples = st.columns([1, 4])
+        with col_send:
+            submit_button = st.form_submit_button("Send 📤", use_container_width=True)
+        with col_examples:
+            st.markdown("*Press Enter to send*")
+    
+    # Quick action buttons
+    st.markdown("**Quick Actions:**")
+    btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
+    
+    with btn_col1:
+        if st.button("📊 Cluster 0", key="cluster_0"):
+            user_input = "Tell me about cluster 0"
+            submit_button = True
+    
+    with btn_col2:
+        if st.button("🛍️ Products", key="products"):
+            user_input = "Show me product categories"
+            submit_button = True
+    
+    with btn_col3:
+        if st.button("💳 Payments", key="payments"):
+            user_input = "What payment methods are available?"
+            submit_button = True
+    
+    with btn_col4:
+        if st.button("📱 Devices", key="devices"):
+            user_input = "What devices do customers use?"
+            submit_button = True
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- If new message submitted ---
-if user_input.strip() and not st.session_state.clear_next:
-    st.session_state.chat_history.append(("You", user_input))
-    reply = cluster_aware_response(user_input)
-    st.session_state.chat_history.append(("Bot", reply))
-    st.session_state.clear_next = True
+# Process user input
+if submit_button and user_input:
+    # Add user message to chat
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    
+    # Get bot response using your helper function
+    bot_response = cluster_aware_response(user_input)
+    
+    # Add bot response to chat
+    st.session_state.messages.append({"role": "assistant", "content": bot_response})
+    
+    # Add to chat history with timestamp
+    timestamp = datetime.now().strftime("%H:%M")
+    st.session_state.chat_history.append((timestamp, user_input, bot_response))
+    
+    # Keep only last 20 conversations in history
+    if len(st.session_state.chat_history) > 20:
+        st.session_state.chat_history = st.session_state.chat_history[-20:]
+    
+    # Rerun to update the display
     st.rerun()
 
-# --- Reset input safely after rerun ---
-if st.session_state.clear_next:
-    st.session_state.chat_input = ""
-    st.session_state.clear_next = False
-
-# --- Clear Button ---
-if st.button("🗑️ Clear Chat"):
-    st.session_state.chat_history = []
-    st.session_state.last_cluster = None
-    st.session_state.last_product = None
-    st.session_state.chat_input = ""
-    st.session_state.clear_next = False
+# Footer with instructions
+st.markdown("---")
+st.markdown("""
+**Instructions:**
+- Type your question and press Enter or click Send
+- Use the sidebar to view and reload previous conversations
+- Try the quick action buttons for common queries
+- Ask about specific clusters (0-9), products, or customer behavior
+""")
