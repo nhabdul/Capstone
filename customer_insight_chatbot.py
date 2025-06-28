@@ -92,8 +92,13 @@ def cluster_aware_response(user_msg):
     return response
 
 # --- Process input ---
-if user_input:
+if user_input and "input_processed" not in st.session_state:
     st.session_state.messages.append({"role": "user", "content": user_input})
     bot_response = cluster_aware_response(user_input)
     st.session_state.messages.append({"role": "bot", "content": bot_response})
-    st.rerun()  # Refresh to display new message
+    st.session_state.input_processed = True
+    st.rerun()
+
+# Reset after rerun
+if "input_processed" in st.session_state:
+    del st.session_state["input_processed"]
