@@ -35,7 +35,7 @@ def get_cluster_info(cluster_id):
     top_payment = subset['Preferred_Payment_Method'].mode()[0]
     top_product = subset['Product_Category'].mode()[0]
     return (
-        f"### 🧐 Cluster {cluster_id} Overview\n"
+        f"### 🧠 Cluster {cluster_id} Overview\n"
         f"- Average Income: ${avg_income:,.2f}\n"
         f"- Spending Score: {avg_spend:.1f}\n"
         f"- Avg Order Value: ${avg_order_value:.2f}\n"
@@ -116,40 +116,17 @@ def cluster_aware_response(user_input):
     if "region" in input_lower:
         return "**Customer Regions:**\n- North\n- South\n- East\n- West"
 
-    # Product-specific question
+    # ✅ First, handle product-specific questions (sets memory)
     product_response = product_cluster_response(user_input)
     if product_response:
         return product_response
 
-    # Follow-up questions
+    # ✅ Then allow follow-up questions using memory
     follow_up = follow_up_on_last_cluster(user_input)
     if follow_up:
         return follow_up
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
-
-# --- CSS Styling ---
-st.markdown("""
-<style>
-.chat-container {
-    height: calc(100vh - 240px);
-    overflow-y: auto;
-    padding: 1rem;
-    background-color: transparent;
-    border-radius: 10px;
-    margin-bottom: 4rem;
-}
-.chat-input-container {
-    position: fixed;
-    bottom: 1.5rem;
-    width: calc(100% - 300px);
-    left: 260px;
-    z-index: 10;
-    background-color: #0e1117;
-    padding-right: 1rem;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # --- Sidebar with topic history ---
 st.sidebar.title("📂 Chat History")
@@ -163,29 +140,53 @@ if st.sidebar.button("➕ Add Topic") and new_topic:
     st.session_state.active_topic = new_topic
 
 # --- Chat UI ---
-st.title("🍭 Customer Insight Chatbot")
-st.markdown("Ask me about product segments, clusters, and spending trends.")
+st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #0e0e0f;
+    }
+    .chat-box {
+        height: calc(100vh - 150px);
+        overflow-y: auto;
+        padding: 1rem;
+        background-color: transparent;
+    }
+    .chat-input {
+        position: fixed;
+        bottom: 2rem;
+        left: 20rem;
+        width: calc(100% - 23rem);
+        background-color: #1a1a1b;
+        padding: 1rem;
+        border-radius: 8px;
+        z-index: 1000;
+    }
+    input[type="text"]::placeholder {
+        color: #999;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("""<h1 style='text-align: center; color: white;'>🛍️ Customer Insight Chatbot</h1>
+<p style='text-align: center; color: gray;'>Ask me about product segments, clusters, and spending trends.</p>""", unsafe_allow_html=True)
 
 chat_history = st.session_state.topics[st.session_state.active_topic]
 
-with st.container():
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    for sender, msg in chat_history:
-        if sender == "user":
-            st.markdown(f"**🧑 You:** {msg}")
-        else:
-            st.markdown(f"**🤖 Bot:** {msg}")
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
+for sender, msg in chat_history:
+    if sender == "user":
+        st.markdown(f"<div style='color:#d1d1d1; margin-bottom: 1rem;'><strong>🧑 You:</strong> {msg}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div style='color:#9fc5e8; margin-bottom: 1.5rem;'><strong>🤖 Bot:</strong> {msg}</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
-# Input field at bottom
-with st.container():
-    st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
-    def submit():
-        user_input = st.session_state.user_input
-        if user_input:
-            reply = cluster_aware_response(user_input)
-            chat_history.append(("user", user_input))
-            chat_history.append(("bot", reply))
-            st.session_state.user_input = ""
-    st.text_input("Your question", key="user_input", on_change=submit, label_visibility="collapsed")
-    st.markdown('</div>', unsafe_allow_html=True)
+# Input field with auto-clear
+st.markdown("<div class='chat-input'>", unsafe_allow_html=True)
+user_input = st.text_input("Your question", key="user_input", label_visibility="collapsed", placeholder="Ask a question about customers, clusters, or spending…")
+if user_input:
+    reply = cluster_aware_response(user_input)
+    chat_history.append(("user", user_input))
+    chat_history.append(("bot", reply))
+    st.session_state.user_input = ""
+st.markdown("</div>", unsafe_allow_html=True)
