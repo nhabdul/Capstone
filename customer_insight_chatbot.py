@@ -525,7 +525,6 @@ with col2:
             • Product categories and customer preferences
             • Payment methods and device usage
             • Customer demographics and behavior
-        </div>
         """)
     
     # Add all messages to chat content
