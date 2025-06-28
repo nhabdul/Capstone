@@ -11,15 +11,34 @@ st.set_page_config(
 )
 
 # Custom CSS for styling
-st.markdown("""
+def get_theme_css(dark_mode=False):
+    if dark_mode:
+        return """
 <style>
+    /* Dark theme variables */
+    :root {
+        --bg-color: #1e1e1e;
+        --text-color: #ffffff;
+        --border-color: #444444;
+        --user-color: #4a9eff;
+        --bot-color: #cccccc;
+        --container-bg: #2d2d2d;
+        --input-bg: #333333;
+    }
+    
+    /* Main app background */
+    .stApp {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+    }
+    
     /* Chat container styling */
     .chat-container {
-        border: 2px solid #e0e0e0;
+        border: 2px solid var(--border-color);
         border-radius: 10px;
         padding: 20px;
         background-color: transparent;
-        margin: 10px 0;
+        margin: 0;
         min-height: 400px;
         max-height: 600px;
         overflow-y: auto;
@@ -28,7 +47,7 @@ st.markdown("""
     /* Message styling */
     .user-message {
         background-color: transparent;
-        color: #007bff;
+        color: var(--user-color);
         padding: 10px 0;
         margin: 5px 0;
         text-align: right;
@@ -38,7 +57,7 @@ st.markdown("""
     
     .bot-message {
         background-color: transparent;
-        color: #333;
+        color: var(--bot-color);
         padding: 10px 0;
         margin: 5px 0;
         word-wrap: break-word;
@@ -46,27 +65,117 @@ st.markdown("""
     
     /* Input area styling */
     .input-container {
-        border: 2px solid #007bff;
+        border: 2px solid var(--border-color);
         border-radius: 10px;
         padding: 10px;
-        margin: 10px 0;
-        background-color: white;
+        margin: 0;
+        background-color: var(--input-bg);
     }
     
     /* Sidebar styling */
     .sidebar-header {
         font-size: 18px;
         font-weight: bold;
-        color: #333;
+        color: var(--text-color);
         margin-bottom: 10px;
     }
     
     .history-item {
-        background-color: #f1f3f4;
+        background-color: var(--container-bg);
         padding: 8px;
         margin: 5px 0;
         border-radius: 5px;
-        border-left: 3px solid #007bff;
+        border-left: 3px solid var(--user-color);
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .history-item:hover {
+        background-color: #404040;
+    }
+    
+    /* Remove streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .user-message, .bot-message {
+            margin-left: 5px;
+            margin-right: 5px;
+        }
+    }
+</style>
+"""
+    else:
+        return """
+<style>
+    /* Light theme variables */
+    :root {
+        --bg-color: #ffffff;
+        --text-color: #333333;
+        --border-color: #e0e0e0;
+        --user-color: #007bff;
+        --bot-color: #333333;
+        --container-bg: #f1f3f4;
+        --input-bg: #ffffff;
+    }
+    
+    /* Chat container styling */
+    .chat-container {
+        border: 2px solid var(--border-color);
+        border-radius: 10px;
+        padding: 20px;
+        background-color: transparent;
+        margin: 0;
+        min-height: 400px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    /* Message styling */
+    .user-message {
+        background-color: transparent;
+        color: var(--user-color);
+        padding: 10px 0;
+        margin: 5px 0;
+        text-align: right;
+        word-wrap: break-word;
+        font-weight: 600;
+    }
+    
+    .bot-message {
+        background-color: transparent;
+        color: var(--bot-color);
+        padding: 10px 0;
+        margin: 5px 0;
+        word-wrap: break-word;
+    }
+    
+    /* Input area styling */
+    .input-container {
+        border: 2px solid var(--user-color);
+        border-radius: 10px;
+        padding: 10px;
+        margin: 0;
+        background-color: var(--input-bg);
+    }
+    
+    /* Sidebar styling */
+    .sidebar-header {
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--text-color);
+        margin-bottom: 10px;
+    }
+    
+    .history-item {
+        background-color: var(--container-bg);
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 5px;
+        border-left: 3px solid var(--user-color);
         cursor: pointer;
         transition: background-color 0.3s;
     }
@@ -88,7 +197,9 @@ st.markdown("""
         }
     }
 </style>
-""", unsafe_allow_html=True)
+"""
+
+st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
 
 # Initialize session state
 if 'messages' not in st.session_state:
@@ -99,6 +210,8 @@ if 'last_cluster' not in st.session_state:
     st.session_state.last_cluster = None
 if 'last_product' not in st.session_state:
     st.session_state.last_product = None
+if 'dark_theme' not in st.session_state:
+    st.session_state.dark_theme = False
 
 # Load your data (replace with your actual data loading)
 @st.cache_data
@@ -228,8 +341,16 @@ def cluster_aware_response(user_input):
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
 # --- Main App Layout ---
-st.title("Customer Insights Chatbot")
-st.markdown("Ask me about customer clusters, products, and spending patterns!")
+# Add theme toggle
+col_title, col_theme = st.columns([4, 1])
+with col_title:
+    st.title("Customer Insights Chatbot")
+    st.markdown("Ask me about customer clusters, products, and spending patterns!")
+with col_theme:
+    st.write("")  # Add some spacing
+    if st.button("🌓 Toggle Theme", key="theme_toggle"):
+        st.session_state.dark_theme = not st.session_state.dark_theme
+        st.rerun()
 
 # Create layout with sidebar and main content
 col1, col2 = st.columns([1, 3])
@@ -267,11 +388,11 @@ with col2:
         <div class="bot-message">
             Hello! I'm your Customer Insights Assistant. I can help you explore customer data and clusters.
             <br><br>
-            Try asking me:
-            <br>• "Tell me about cluster 1"
-            <br>• "Which customers buy electronics?"
-            <br>• "Show me product categories"
-            <br>• "What payment methods are popular?"
+            Try asking me about:
+            <br>• Specific clusters (e.g., "Tell me about cluster 1")
+            <br>• Product categories and customer preferences
+            <br>• Payment methods and device usage
+            <br>• Customer demographics and behavior
         </div>
         """)
     
