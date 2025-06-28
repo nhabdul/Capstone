@@ -135,7 +135,7 @@ st.markdown("""
             border: 1px solid white;
             border-radius: 12px;
             background-color: rgba(255, 255, 255, 0.05);
-            margin-bottom: 6rem;
+            margin-bottom: 200px;
         }
         .chat-input-wrapper {
             position: fixed;
@@ -181,7 +181,7 @@ st.markdown("Ask me about product segments, clusters, and spending trends.")
 
 chat_history = st.session_state.topics[st.session_state.active_topic]
 
-# Collect user input first
+# --- Input Form First ---
 st.markdown("<div class='chat-input-wrapper'>", unsafe_allow_html=True)
 with st.form(key="chat_form_bottom", clear_on_submit=True):
     chat_col1, chat_col2 = st.columns([10, 1])
@@ -196,7 +196,7 @@ with st.form(key="chat_form_bottom", clear_on_submit=True):
         chat_history.append(("bot", reply))
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Then show conversation in scrollable container
+# --- Then Show the Conversation Box ---
 st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
 for sender, msg in chat_history:
     if sender == "user":
