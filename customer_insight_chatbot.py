@@ -8,7 +8,7 @@ def load_data():
 
 df_clusters = load_data()
 
-# --- Session State ---
+# Session state for memory
 if "topics" not in st.session_state:
     st.session_state.topics = {"Default": []}
 if "active_topic" not in st.session_state:
@@ -18,59 +18,29 @@ if "last_cluster" not in st.session_state:
 if "last_product" not in st.session_state:
     st.session_state.last_product = None
 
-# --- Sidebar ---
-st.sidebar.title("📂 Chat History")
-topic_choice = st.sidebar.radio("Choose a topic:", list(st.session_state.topics.keys()))
-if topic_choice != st.session_state.active_topic:
-    st.session_state.active_topic = topic_choice
-
-new_topic = st.sidebar.text_input("Start new topic")
-if st.sidebar.button("➕ Add Topic") and new_topic:
-    st.session_state.topics[new_topic] = []
-    st.session_state.active_topic = new_topic
-
-chat_history = st.session_state.topics[st.session_state.active_topic]
-
-# --- Styling ---
-st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
+# --- Custom styling ---
+st.set_page_config(layout="wide")
 st.markdown("""
-<style>
-.chat-container {
-    height: calc(100vh - 220px);
-    overflow-y: auto;
-    padding: 1rem;
-    background-color: transparent;
-    border-radius: 10px;
-    margin-bottom: 1rem;
-}
-.block-container {
-    padding-top: 1rem !important;
-}
-.stTextInput {
-    position: fixed;
-    bottom: 1.5rem;
-    width: 70%;
-    left: 15%;
-    z-index: 10;
-}
-</style>
+    <style>
+    .chat-container {
+        height: 75vh;
+        overflow-y: auto;
+        padding: 10px;
+        background: transparent;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        margin-bottom: 60px;
+    }
+    .input-container {
+        position: fixed;
+        bottom: 20px;
+        width: 85%;
+        background: white;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# --- Main UI ---
-st.title("🛍️ Customer Insight Chatbot")
-st.markdown("Ask me about product segments, clusters, and spending trends.")
-
-# Display chat messages
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-for sender, msg in chat_history:
-    if sender == "user":
-        st.markdown(f"**🧑 You:** {msg}")
-    else:
-        st.markdown(f"**🤖 Bot:** {msg}")
-st.markdown('</div>', unsafe_allow_html=True)
-
 # --- Helper Functions ---
-
 def get_cluster_info(cluster_id):
     subset = df_clusters[df_clusters['Cluster'] == cluster_id]
     if subset.empty:
@@ -146,15 +116,18 @@ def follow_up_on_last_cluster(user_input):
 def cluster_aware_response(user_input):
     input_lower = user_input.lower()
 
+    # Ask for cluster info
     if "cluster" in input_lower:
-        for i in range(10):
+        for i in range(10):  # supports clusters 0–9
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
 
+    # Ask for available product categories
     if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower:
         categories = df_clusters['Product_Category'].unique()
         return "**Available Product Categories:**\n" + "\n".join(f"- {c}" for c in sorted(categories))
 
+    # Other general questions
     if "payment" in input_lower:
         return "**Top Payment Methods:**\n- Credit Card\n- Debit Card\n- PayPal"
     if "device" in input_lower:
@@ -164,17 +137,45 @@ def cluster_aware_response(user_input):
     if "region" in input_lower:
         return "**Customer Regions:**\n- North\n- South\n- East\n- West"
 
+    # ✅ First, handle product-specific questions (sets memory)
     product_response = product_cluster_response(user_input)
     if product_response:
         return product_response
 
+    # ✅ Then allow follow-up questions using memory
     follow_up = follow_up_on_last_cluster(user_input)
     if follow_up:
         return follow_up
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- Input Handling ---
+# --- Sidebar with topic history ---
+st.sidebar.title("📂 Chat History")
+topic_choice = st.sidebar.radio("Choose a topic:", list(st.session_state.topics.keys()))
+if topic_choice != st.session_state.active_topic:
+    st.session_state.active_topic = topic_choice
+
+new_topic = st.sidebar.text_input("Start new topic")
+if st.sidebar.button("➕ Add Topic") and new_topic:
+    st.session_state.topics[new_topic] = []
+    st.session_state.active_topic = new_topic
+
+# --- Chat UI ---
+st.title("🛍️ Customer Insight Chatbot")
+st.markdown("Ask me about product segments, clusters, and spending trends.")
+
+chat_history = st.session_state.topics[st.session_state.active_topic]
+
+# --- Chat display ---
+st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+for sender, msg in chat_history:
+    if sender == "user":
+        st.markdown(f"**🧑 You:** {msg}")
+    else:
+        st.markdown(f"**🤖 Bot:** {msg}")
+st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Input fixed at bottom ---
 def submit():
     user_input = st.session_state.user_input
     if user_input:
@@ -182,5 +183,6 @@ def submit():
         chat_history.append(("user", user_input))
         chat_history.append(("bot", reply))
         st.session_state.user_input = ""
+        st.experimental_rerun()
 
 st.text_input("Your question", key="user_input", on_change=submit)
