@@ -181,13 +181,15 @@ st.markdown("Ask me about product segments, clusters, and spending trends.")
 chat_history = st.session_state.topics[st.session_state.active_topic]
 
 # Show conversation in scrollable container
-st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-for sender, msg in chat_history:
-    if sender == "user":
-        st.markdown(f"**🧑 You:** {msg}")
-    else:
-        st.markdown(f"**🤖 Bot:** {msg}")
-st.markdown("</div>", unsafe_allow_html=True)
+chat_placeholder = st.empty()
+with chat_placeholder.container():
+    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+    for sender, msg in chat_history:
+        if sender == "user":
+            st.markdown(f"**🧑 You:** {msg}")
+        else:
+            st.markdown(f"**🤖 Bot:** {msg}")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # Chat input at bottom of screen
 st.markdown("<div class='chat-input-wrapper'>", unsafe_allow_html=True)
@@ -202,4 +204,14 @@ with st.form(key="chat_form_bottom", clear_on_submit=True):
         reply = cluster_aware_response(user_input)
         chat_history.append(("user", user_input))
         chat_history.append(("bot", reply))
+        # Refresh chat output
+        with chat_placeholder.container():
+            st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+            for sender, msg in chat_history:
+                if sender == "user":
+                    st.markdown(f"**🧑 You:** {msg}")
+                else:
+                    st.markdown(f"**🤖 Bot:** {msg}")
+            st.markdown("</div>", unsafe_allow_html=True)
+
 st.markdown("</div>", unsafe_allow_html=True)
