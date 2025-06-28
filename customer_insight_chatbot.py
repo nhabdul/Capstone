@@ -564,12 +564,10 @@ with col2:
                 behavior: "smooth"
             }});
         }}
-    }} 
+    }}
 
-    // Scroll on initial load
     window.addEventListener("load", scrollToBottom);
 
-    // Scroll on any content change in chatbox
     const chatbox = document.getElementById("chatbox");
     if (chatbox) {{
         const observer = new MutationObserver(scrollToBottom);
@@ -579,12 +577,6 @@ with col2:
         }});
     }}
     </script>
-    ''', unsafe_allow_html=True)
-
-    # Input area with custom styling - seamlessly connected to chat container
-    st.markdown('''
-    <div class="input-container">
-    </div>
     ''', unsafe_allow_html=True)
     
     # Create input form that responds to Enter key
