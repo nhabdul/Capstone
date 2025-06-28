@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import re
+from datetime import datetime
 
 # Load data
 df = pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
@@ -73,7 +74,7 @@ st.markdown("<h1 style='text-align:center;'>💬 Customer Insight Chatbot</h1>",
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Scrollable container style
+# Style
 st.markdown("""
 <style>
 .chat-container {
@@ -97,6 +98,11 @@ st.markdown("""
     margin-top: 5px;
     margin-bottom: 15px;
 }
+.timestamp {
+    font-size: 0.75rem;
+    color: #777;
+    margin-bottom: 0.25rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,16 +112,19 @@ with st.form(key="chat_form", clear_on_submit=True):
     submit = st.form_submit_button("Send")
 
 if submit and user_input:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     response = chatbot_response(user_input)
-    st.session_state.history.append(("You", user_input))
-    st.session_state.history.append(("Bot", response))
+    st.session_state.history.insert(0, ("Bot", response, now))
+    st.session_state.history.insert(0, ("You", user_input, now))
 
 # Display chat
 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-for sender, msg in st.session_state.history:
+for sender, msg, time in st.session_state.history:
     if sender == "You":
+        st.markdown(f'<div class="timestamp">{time}</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="user-msg">🧑‍💼 <b>You:</b> {msg}</div>', unsafe_allow_html=True)
     else:
+        st.markdown(f'<div class="timestamp">{time}</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="bot-msg">🤖 <b>Bot:</b><br>{msg}</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
