@@ -96,15 +96,18 @@ def follow_up_on_last_cluster(user_input):
 def cluster_aware_response(user_input):
     input_lower = user_input.lower()
 
+    # Ask for cluster info
     if "cluster" in input_lower:
-        for i in range(10):
+        for i in range(10):  # supports clusters 0–9
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
 
+    # Ask for available product categories
     if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower:
         categories = df_clusters['Product_Category'].unique()
         return "**Available Product Categories:**\n" + "\n".join(f"- {c}" for c in sorted(categories))
 
+    # Other general questions
     if "payment" in input_lower:
         return "**Top Payment Methods:**\n- Credit Card\n- Debit Card\n- PayPal"
     if "device" in input_lower:
@@ -124,25 +127,35 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- UI Setup ---
+# --- UI Styling ---
 st.set_page_config(layout="wide")
 st.markdown("""
     <style>
-        .scroll-container {
-            height: 70vh;
+        .chat-container {
+            height: calc(100vh - 220px);
             overflow-y: auto;
             padding: 1rem;
             border: 1px solid white;
-            border-radius: 20px;
+            border-radius: 10px;
             background-color: rgba(255, 255, 255, 0.05);
-            margin-bottom: 1rem;
         }
-        .stTextInput>div>div>input {
-            border: 1px solid white !important;
-            border-radius: 20px !important;
+        .chat-input {
+            display: flex;
+            align-items: center;
+            padding-top: 1rem;
         }
-        button[kind="primary"] {
-            border-radius: 20px !important;
+        .chat-input .stTextInput {
+            flex-grow: 1;
+            border-radius: 12px;
+        }
+        .send-button button {
+            margin-left: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -158,13 +171,15 @@ if st.sidebar.button("➕ Add Topic") and new_topic:
     st.session_state.topics[new_topic] = []
     st.session_state.active_topic = new_topic
 
-# --- Chat Display ---
+# --- Title and Chat Section ---
 st.title("🛍️ Customer Insight Chatbot")
 st.markdown("Ask me about product segments, clusters, and spending trends.")
+
 chat_history = st.session_state.topics[st.session_state.active_topic]
 
+# Show conversation inside scrollable div
 with st.container():
-    st.markdown("<div class='scroll-container'>", unsafe_allow_html=True)
+    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
     for sender, msg in chat_history:
         if sender == "user":
             st.markdown(f"**🧑 You:** {msg}")
@@ -172,18 +187,14 @@ with st.container():
             st.markdown(f"**🤖 Bot:** {msg}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Input Box ---
-def submit():
-    user_input = st.session_state.user_input
-    if user_input:
-        reply = cluster_aware_response(user_input)
-        chat_history.append(("user", user_input))
-        chat_history.append(("bot", reply))
-        st.session_state.user_input = ""
-
-cols = st.columns([10, 1])
-with cols[0]:
-    st.text_input("Type your question here...", key="user_input", on_change=submit, label_visibility="collapsed")
-with cols[1]:
-    if st.button("📨", use_container_width=True):
-        submit()
+# Input + Send Button
+col1, col2 = st.columns([10, 1])
+with col1:
+    user_input = st.text_input("Type your question here...", key="user_input")
+with col2:
+    if st.button("📤", key="send_button"):
+        if user_input:
+            reply = cluster_aware_response(user_input)
+            chat_history.append(("user", user_input))
+            chat_history.append(("bot", reply))
+            st.session_state.user_input = ""
