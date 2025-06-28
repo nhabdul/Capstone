@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Simplified CSS with auto-scroll
+# Simplified CSS - removed JavaScript
 def get_css():
     return """
 <style>
@@ -17,32 +17,26 @@ def get_css():
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    .chat-container {
-        border: 2px solid #e0e0e0;
-        border-radius: 10px;
-        padding: 20px;
-        min-height: 400px;
-        max-height: 500px;
-        overflow-y: auto;
-        background-color: #fafafa;
-        scroll-behavior: smooth;
-    }
-    
     .user-message {
         color: #007bff;
-        padding: 10px 0;
+        padding: 10px;
         text-align: right;
         font-weight: 600;
-        border-bottom: 1px solid #f0f0f0;
-        margin-bottom: 10px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        margin: 5px 0;
+        border-left: 4px solid #007bff;
     }
     
     .bot-message {
         color: #333;
-        padding: 10px 0;
+        padding: 10px;
         line-height: 1.6;
-        border-bottom: 1px solid #f0f0f0;
-        margin-bottom: 10px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        margin: 5px 0;
+        border-left: 4px solid #28a745;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .input-area {
@@ -53,40 +47,15 @@ def get_css():
         background-color: white;
     }
     
+    .scroll-anchor {
+        height: 1px;
+        margin-top: 10px;
+    }
+    
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 </style>
-
-<script>
-function scrollToBottom() {
-    setTimeout(function() {
-        const chatContainer = document.querySelector('.chat-container');
-        if (chatContainer) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-    }, 100);
-}
-
-// Call scroll function periodically to ensure it works
-setInterval(function() {
-    const chatContainer = document.querySelector('.chat-container');
-    if (chatContainer && chatContainer.scrollHeight > chatContainer.clientHeight) {
-        const isAtBottom = chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 1;
-        if (!isAtBottom) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-    }
-}, 500);
-
-// Force scroll on any DOM change
-new MutationObserver(function() {
-    scrollToBottom();
-}).observe(document.body, { childList: true, subtree: true });
-
-// Initial scroll
-scrollToBottom();
-</script>
 """
 
 # Initialize session state
@@ -209,31 +178,35 @@ st.markdown("Ask me about customer clusters, products, and spending patterns!")
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    # Chat display area
-    chat_content = []
-    
+    # Chat display area using native Streamlit components
     if not st.session_state.messages:
-        chat_content.append('''
-            <div class="bot-message">
-                👋 Hello! I'm your Customer Insights Assistant.<br><br>
-                <strong>Try asking:</strong><br>
-                • "Tell me about cluster 1"<br>
-                • "Show me product categories"<br>
-                • "What payment methods are available?"<br>
-                • "Electronics customers"
-            </div>
-        ''')
+        st.markdown('''
+        <div class="bot-message">
+            👋 <strong>Hello! I'm your Customer Insights Assistant.</strong><br><br>
+            <strong>Try asking:</strong><br>
+            • "Tell me about cluster 1"<br>
+            • "Show me product categories"<br>
+            • "What payment methods are available?"<br>
+            • "Electronics customers"
+        </div>
+        ''', unsafe_allow_html=True)
     
-    for message in st.session_state.messages:
+    # Display messages using Streamlit containers for proper scrolling
+    for i, message in enumerate(st.session_state.messages):
         if message["role"] == "user":
-            chat_content.append(f'<div class="user-message">You: {message["content"]}</div>')
+            st.markdown(f'<div class="user-message">You: {message["content"]}</div>', 
+                       unsafe_allow_html=True)
         else:
-            # Convert markdown to HTML for better display
-            content = message["content"].replace('\n', '<br>').replace('**', '<strong>').replace('**', '</strong>')
-            chat_content.append(f'<div class="bot-message">{content}</div>')
+            # Convert markdown formatting for HTML display
+            content = message["content"]
+            content = content.replace('**', '<strong>').replace('**', '</strong>')
+            content = content.replace('\n', '<br>')
+            st.markdown(f'<div class="bot-message">{content}</div>', 
+                       unsafe_allow_html=True)
     
-    st.markdown(f'<div class="chat-container" id="chat-container">{"".join(chat_content)}</div>', 
-                unsafe_allow_html=True)
+    # Scroll anchor - this will automatically be at the bottom
+    if st.session_state.messages:
+        st.markdown('<div class="scroll-anchor"></div>', unsafe_allow_html=True)
     
     # Input area
     st.markdown('<div class="input-area">', unsafe_allow_html=True)
