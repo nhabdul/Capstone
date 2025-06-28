@@ -193,5 +193,5 @@ with st.container():
             chat_history.append(("user", user_input))
             chat_history.append(("bot", reply))
             st.session_state.user_input = ""
-    st.text_input("", key="user_input", on_change=submit)
+    st.text_input("Type your question here...", key="user_input", on_change=submit)
     st.markdown("</div>", unsafe_allow_html=True)
