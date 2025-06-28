@@ -403,7 +403,7 @@ def cluster_aware_response(user_input):
     # Handle cluster queries
     if "cluster" in input_lower:
         # Check for specific cluster numbers
-        for i in range(5):  # Support clusters 0-4
+        for i in range(4):  # Support clusters 0-3
             if f"{i}" in input_lower:
                 return get_cluster_info(i)
         
