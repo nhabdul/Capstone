@@ -256,44 +256,53 @@ def get_theme_css(dark_mode=False):
 </style>
 """
 
-# JavaScript function for auto-scrolling
-def auto_scroll_js():
-    return """
-<script>
-function scrollToBottom() {
-    const chatContainer = document.querySelector('.chat-container');
-    if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-}
-
-// Auto-scroll after DOM updates
-setTimeout(scrollToBottom, 100);
-
-// Also scroll on window resize
-window.addEventListener('resize', scrollToBottom);
-
-// Create observer to watch for changes in chat content
-const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        if (mutation.addedNodes.length > 0) {
-            setTimeout(scrollToBottom, 50);
-        }
-    });
-});
-
-// Start observing when the chat container is available
-setTimeout(function() {
-    const chatContainer = document.querySelector('.chat-container');
-    if (chatContainer) {
-        observer.observe(chatContainer, {
-            childList: true,
-            subtree: true
-        });
-    }
-}, 200);
-</script>
-"""
+# Alternative auto-scroll using Streamlit's built-in method
+def add_scroll_to_bottom():
+    st.markdown(f"""
+    <script>
+    // Wait for Streamlit to fully render, then scroll
+    window.addEventListener('load', function() {{
+        setTimeout(function() {{
+            const chatContainer = document.querySelector('.chat-container');
+            if (chatContainer) {{
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }}
+        }}, 100);
+    }});
+    
+    // Also try after Streamlit updates
+    document.addEventListener('DOMContentLoaded', function() {{
+        setTimeout(function() {{
+            const chatContainer = document.querySelector('.chat-container');
+            if (chatContainer) {{
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }}
+        }}, 100);
+    }});
+    </script>
+    
+    <script>
+    // Force immediate scroll - Streamlit specific
+    setTimeout(function() {{
+        const containers = document.querySelectorAll('.chat-container');
+        containers.forEach(container => {{
+            container.scrollTop = container.scrollHeight;
+        }});
+    }}, 10);
+    
+    // Aggressive scrolling approach
+    let scrollCount = 0;
+    const scrollTimer = setInterval(function() {{
+        const chatContainer = document.querySelector('.chat-container');
+        if (chatContainer && scrollCount < 10) {{
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            scrollCount++;
+        }} else {{
+            clearInterval(scrollTimer);
+        }}
+    }}, 100);
+    </script>
+    """, unsafe_allow_html=True)
 
 # Initialize session state
 if 'messages' not in st.session_state:
@@ -596,15 +605,34 @@ with col2:
         else:
             chat_content.append(f'<div class="bot-message">{message["content"]}</div>')
     
-    # Display everything inside the bordered container
+    # Display everything inside the bordered container with unique ID
     st.markdown(f'''
     <div class="chat-container" id="chat-container-{st.session_state.message_count}">
         {"".join(chat_content)}
+        <div id="scroll-anchor-{st.session_state.message_count}"></div>
     </div>
     ''', unsafe_allow_html=True)
     
-    # Add auto-scroll JavaScript
-    st.markdown(auto_scroll_js(), unsafe_allow_html=True)
+    # Add auto-scroll JavaScript - Multiple approaches for reliability
+    add_scroll_to_bottom()
+    
+    # Additional scroll trigger based on message count
+    if st.session_state.message_count > 0:
+        st.markdown(f"""
+        <script>
+        // Message-count triggered scroll
+        (function() {{
+            const messageCount = {st.session_state.message_count};
+            setTimeout(function() {{
+                const chatContainer = document.querySelector('.chat-container');
+                if (chatContainer) {{
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    console.log('Scrolled for message count:', messageCount);
+                }}
+            }}, 50);
+        }})();
+        </script>
+        """, unsafe_allow_html=True)
     
     # Input area with custom styling - seamlessly connected to chat container
     st.markdown('''
