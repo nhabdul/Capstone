@@ -127,27 +127,27 @@ st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
 st.title("🛍️ Customer Insight Chatbot")
 st.markdown("Ask me about product segments, customer clusters, or behavior insights!")
 
-# --- Chat History Display ---
+# --- Display Chat History ---
 st.markdown("### 💬 Chat History")
 for sender, message in st.session_state.chat_history:
     st.markdown(f"**{sender}:** {message}")
 
-# --- Form (Enter key works) ---
+# --- Chat Form (Enter works, no bugs) ---
 with st.form("chat_form", clear_on_submit=False):
-    user_input = st.text_input("Type your question here...", key="chat_input")
+    st.text_input("Type your question here...", key="chat_input")
     submitted = st.form_submit_button("Send")
 
-# --- Handle Submission & Response ---
-if submitted and user_input.strip():
-    st.session_state.chat_history.append(("You", user_input))
-    reply = cluster_aware_response(user_input)
-    st.session_state.chat_history.append(("Bot", reply))
+# --- Handle submission outside the form ---
+if submitted and st.session_state.chat_input.strip():
+    user_msg = st.session_state.chat_input
+    st.session_state.chat_history.append(("You", user_msg))
+    bot_reply = cluster_aware_response(user_msg)
+    st.session_state.chat_history.append(("Bot", bot_reply))
 
-    # Hack to visually clear input: rerender with different key temporarily
-    st.text_input("clear_input", value="", key="temp_input", label_visibility="collapsed")
-    del st.session_state["chat_input"]
+    # Clear input box properly
+    st.session_state.chat_input = ""
 
-# --- Clear Chat Option ---
+# --- Clear Chat Button ---
 if st.button("🗑️ Clear Chat"):
     st.session_state.chat_history = []
     st.session_state.last_cluster = None
