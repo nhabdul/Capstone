@@ -124,42 +124,21 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- UI Styling ---
+# --- UI Setup ---
 st.set_page_config(layout="wide")
 st.markdown("""
     <style>
-        .chat-container {
-            height: calc(100vh - 250px);
+        .scroll-container {
+            height: 70vh;
             overflow-y: auto;
             padding: 1rem;
             border: 1px solid white;
-            border-radius: 12px;
+            border-radius: 10px;
             background-color: rgba(255, 255, 255, 0.05);
-            margin-bottom: 200px;
+            margin-bottom: 1rem;
         }
-        .chat-input-wrapper {
-            position: fixed;
-            bottom: 1rem;
-            left: 0;
-            width: 100%;
-            background: #0e1117;
-            padding: 1rem;
-            z-index: 999;
-        }
-        .chat-input {
-            display: flex;
-            align-items: center;
-        }
-        .chat-input .stTextInput input {
-            border-radius: 12px;
-        }
-        .send-button button {
-            margin-left: 0.5rem;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
+        .stTextInput>div>div>input {
+            border: 1px solid white !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -175,32 +154,27 @@ if st.sidebar.button("➕ Add Topic") and new_topic:
     st.session_state.topics[new_topic] = []
     st.session_state.active_topic = new_topic
 
-# --- Title ---
+# --- Chat Display ---
 st.title("🛍️ Customer Insight Chatbot")
 st.markdown("Ask me about product segments, clusters, and spending trends.")
-
 chat_history = st.session_state.topics[st.session_state.active_topic]
 
-# --- Input Form First ---
-st.markdown("<div class='chat-input-wrapper'>", unsafe_allow_html=True)
-with st.form(key="chat_form_bottom", clear_on_submit=True):
-    chat_col1, chat_col2 = st.columns([10, 1])
-    with chat_col1:
-        user_input = st.text_input("Type your question here...", key="bottom_input")
-    with chat_col2:
-        submitted = st.form_submit_button("📤")
+with st.container():
+    st.markdown("<div class='scroll-container'>", unsafe_allow_html=True)
+    for sender, msg in chat_history:
+        if sender == "user":
+            st.markdown(f"**🧑 You:** {msg}")
+        else:
+            st.markdown(f"**🤖 Bot:** {msg}")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    if submitted and user_input:
+# --- Input Box (Single Only) ---
+def submit():
+    user_input = st.session_state.user_input
+    if user_input:
         reply = cluster_aware_response(user_input)
         chat_history.append(("user", user_input))
         chat_history.append(("bot", reply))
-st.markdown("</div>", unsafe_allow_html=True)
+        st.session_state.user_input = ""
 
-# --- Then Show the Conversation Box ---
-st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-for sender, msg in chat_history:
-    if sender == "user":
-        st.markdown(f"**🧑 You:** {msg}")
-    else:
-        st.markdown(f"**🤖 Bot:** {msg}")
-st.markdown("</div>", unsafe_allow_html=True)
+st.text_input("Type your question here...", key="user_input", on_change=submit)
