@@ -21,7 +21,7 @@ def get_theme_css(dark_mode=False):
         --text-color: #ffffff;
         --border-color: #444444;
         --user-color: #4a9eff;
-        --bot-color: #cccccc;
+        --bot-color: #e0e0e0;
         --container-bg: #2d2d2d;
         --input-bg: #333333;
     }
@@ -142,7 +142,7 @@ def get_theme_css(dark_mode=False):
         --text-color: #333333;
         --border-color: #e0e0e0;
         --user-color: #007bff;
-        --bot-color: #333333;
+        --bot-color: #2c3e50;
         --container-bg: #f1f3f4;
         --input-bg: #ffffff;
     }
@@ -341,15 +341,15 @@ def get_cluster_info(cluster_id):
     top_product = subset['Product_Category'].mode()[0]
     return (
         f"### 🧠 Cluster {cluster_id} Overview\n"
-        f"- Average Income: ${avg_income:,.2f}\n"
-        f"- Spending Score: {avg_spend:.1f}\n"
-        f"- Avg Order Value: ${avg_order_value:.2f}\n"
-        f"- Orders per Customer: {avg_orders:.2f}\n"
-        f"- Average Review Score: {avg_review:.2f}\n"
-        f"- Age: {avg_age:.1f} years\n"
-        f"- Most used payment method: **{top_payment}**\n"
-        f"- Most used device: **{top_device}**\n"
-        f"- Common product: **{top_product}**"
+        f"• Average Income: ${avg_income:,.2f}\n"
+        f"• Spending Score: {avg_spend:.1f}\n"
+        f"• Avg Order Value: ${avg_order_value:.2f}\n"
+        f"• Orders per Customer: {avg_orders:.2f}\n"
+        f"• Average Review Score: {avg_review:.2f}\n"
+        f"• Age: {avg_age:.1f} years\n"
+        f"• Most used payment method: **{top_payment}**\n"
+        f"• Most used device: **{top_device}**\n"
+        f"• Common product: **{top_product}**"
     )
 
 def product_cluster_response(user_input):
@@ -382,19 +382,19 @@ def follow_up_on_last_cluster(user_input):
     subset = df_clusters[df_clusters["Cluster"] == cluster_id]
 
     if "income" in msg or "salary" in msg:
-        return f"Average income in Cluster {cluster_id} is ${subset['Annual_Income'].mean():,.2f}."
+        return f"• Average income in Cluster {cluster_id} is ${subset['Annual_Income'].mean():,.2f}."
     elif "spend" in msg:
-        return f"Average spending score in Cluster {cluster_id} is {subset['Spending_Score'].mean():.2f}."
+        return f"• Average spending score in Cluster {cluster_id} is {subset['Spending_Score'].mean():.2f}."
     elif "order" in msg:
-        return f"Average number of orders in Cluster {cluster_id} is {subset['Number_of_Orders'].mean():.2f}."
+        return f"• Average number of orders in Cluster {cluster_id} is {subset['Number_of_Orders'].mean():.2f}."
     elif "review" in msg:
-        return f"Average review score in Cluster {cluster_id} is {subset['Review_Score'].mean():.2f}."
+        return f"• Average review score in Cluster {cluster_id} is {subset['Review_Score'].mean():.2f}."
     elif "device" in msg:
-        return f"Most common device in Cluster {cluster_id} is **{subset['Device_Used'].mode().iloc[0]}**."
+        return f"• Most common device in Cluster {cluster_id} is **{subset['Device_Used'].mode().iloc[0]}**."
     elif "region" in msg:
-        return f"Most customers in Cluster {cluster_id} are from **{subset['Customer_Region'].mode().iloc[0]}**."
+        return f"• Most customers in Cluster {cluster_id} are from **{subset['Customer_Region'].mode().iloc[0]}**."
     elif "gender" in msg:
-        return f"Most customers in Cluster {cluster_id} are **{subset['Gender'].mode().iloc[0]}**."
+        return f"• Most customers in Cluster {cluster_id} are **{subset['Gender'].mode().iloc[0]}**."
     return None
 
 def cluster_aware_response(user_input):
@@ -409,36 +409,36 @@ def cluster_aware_response(user_input):
         
         # If just "cluster" or "clusters" is mentioned, show all available clusters
         if input_lower.strip() in ["cluster", "clusters", "show me available clusters", "available clusters"]:
-            cluster_info = "* **Clusters**:\n"
+            cluster_info = "**Available Clusters:**\n\n"
             for i in range(5):
-                cluster_info += f"   * Cluster {i}\n"
+                cluster_info += f"• Cluster {i}\n"
             
             return cluster_info
 
     if ("product" in input_lower and "categor" in input_lower) or "available categories" in input_lower or "show me product categories" in input_lower:
         categories = sorted(df_clusters['Product_Category'].unique())
-        category_info = "* **Product Categories**:\n"
+        category_info = "**Available Product Categories:**\n\n"
         
         for category in categories:
-            category_info += f"   * {category}\n"
+            category_info += f"• {category}\n"
         
         return category_info
 
     if "payment" in input_lower or "what payment methods are available" in input_lower:
         payments = sorted(df_clusters['Preferred_Payment_Method'].unique())
-        payment_info = "* **Payment Methods**:\n"
+        payment_info = "**Available Payment Methods:**\n\n"
         
         for payment in payments:
-            payment_info += f"   * {payment}\n"
+            payment_info += f"• {payment}\n"
         
         return payment_info
     
     if "device" in input_lower or "what devices do customers use" in input_lower:
         devices = sorted(df_clusters['Device_Used'].unique())
-        device_info = "* **Devices**:\n"
+        device_info = "**Customer Devices:**\n\n"
         
         for device in devices:
-            device_info += f"   * {device}\n"
+            device_info += f"• {device}\n"
         
         return device_info
     
@@ -447,10 +447,10 @@ def cluster_aware_response(user_input):
     
     if "region" in input_lower:
         regions = sorted(df_clusters['Customer_Region'].unique())
-        region_info = "* **Regions**:\n"
+        region_info = "**Customer Regions:**\n\n"
         
         for region in regions:
-            region_info += f"   * {region}\n"
+            region_info += f"• {region}\n"
         
         return region_info
 
@@ -533,14 +533,13 @@ with col2:
     # Build chat content
     if not st.session_state.messages:
         chat_content.append("""
-        <div class="bot-message">
             Hello! I'm your Customer Insights Assistant. I can help you explore customer data and clusters.
-            <br><br>
+            
             Try asking me about:
-            <br>• Specific clusters (e.g., "Tell me about cluster 1")
-            <br>• Product categories and customer preferences
-            <br>• Payment methods and device usage
-            <br>• Customer demographics and behavior
+            • Specific clusters (e.g., "Tell me about cluster 1")
+            • Product categories and customer preferences
+            • Payment methods and device usage
+            • Customer demographics and behavior
         </div>
         """)
     
