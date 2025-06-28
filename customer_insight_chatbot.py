@@ -8,7 +8,7 @@ def load_data():
 
 df_clusters = load_data()
 
-# --- Helper Functions (same as before) ---
+# --- Helper Functions (unchanged) ---
 def get_cluster_info(cluster_id):
     subset = df_clusters[df_clusters['Cluster'] == cluster_id]
     if subset.empty:
@@ -112,44 +112,41 @@ def cluster_aware_response(user_input):
 
     return "🤖 Sorry, I didn't understand that. Try asking about a product, a cluster, or spending habits."
 
-# --- Initialize session state ---
+# --- Session State ---
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'last_cluster' not in st.session_state:
     st.session_state.last_cluster = None
 if 'last_product' not in st.session_state:
     st.session_state.last_product = None
-if 'temp_input' not in st.session_state:
-    st.session_state.temp_input = None
+if 'chat_input' not in st.session_state:
+    st.session_state.chat_input = ""
 
-# --- UI Header ---
+# --- Layout ---
 st.set_page_config(page_title="Customer Insight Chatbot", layout="wide")
 st.title("🛍️ Customer Insight Chatbot")
 st.markdown("Ask me about product segments, customer clusters, or behavior insights!")
 
-# --- Chat History (at top) ---
+# --- Display Chat History ---
 st.markdown("### 💬 Chat History")
-for sender, msg in st.session_state.chat_history:
-    st.markdown(f"**{sender}:** {msg}")
+for sender, message in st.session_state.chat_history:
+    st.markdown(f"**{sender}:** {message}")
 
-# --- Input Form (Enter works with single press!) ---
-with st.form("chat_form", clear_on_submit=True):
-    user_input = st.text_input("Type your question here...")
+# --- Form (Enter key works, no delay) ---
+with st.form("chat_form", clear_on_submit=False):
+    user_input = st.text_input("Type your question here...", value=st.session_state.chat_input, key="input_field")
     submitted = st.form_submit_button("Send")
-    if submitted and user_input.strip() != "":
-        st.session_state.temp_input = user_input  # save outside form processing
 
-# --- Process after form (safe from clearing) ---
-if st.session_state.temp_input:
-    question = st.session_state.temp_input
-    st.session_state.chat_history.append(("You", question))
-    response = cluster_aware_response(question)
-    st.session_state.chat_history.append(("Bot", response))
-    st.session_state.temp_input = None  # reset
+    if submitted and user_input.strip():
+        st.session_state.chat_history.append(("You", user_input))
+        reply = cluster_aware_response(user_input)
+        st.session_state.chat_history.append(("Bot", reply))
+        st.session_state.chat_input = ""  # manually clear
+        st.experimental_rerun()  # force UI update immediately
 
-# --- Clear chat ---
+# --- Clear Chat ---
 if st.button("🗑️ Clear Chat"):
     st.session_state.chat_history = []
     st.session_state.last_cluster = None
     st.session_state.last_product = None
-    st.session_state.temp_input = None
+    st.session_state.chat_input = ""
