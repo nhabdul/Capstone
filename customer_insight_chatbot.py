@@ -5,13 +5,6 @@ import pandas as pd
 @st.cache_data
 def load_data():
     return pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
-xaimport streamlit as st
-import pandas as pd
-
-# --- Load Data ---
-@st.cache_data
-def load_data():
-    return pd.read_csv("ecommerce_customer_clusters_for_tableau.csv")
 
 df_clusters = load_data()
 
