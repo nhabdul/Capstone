@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer Insight Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
+        .chat-box { background: white; padding: 20px; border-radius: 10px; max-width: 800px; margin: auto; }
+        .message { margin-bottom: 15px; }
+        .user { color: #0b5394; font-weight: bold; }
+        .bot { color: #3c3c3c; font-style: italic; }
+        .timestamp { font-size: small; color: #999; }
+        input[type=text] { width: 80%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        input[type=submit] { padding: 10px 15px; border-radius: 5px; border: none; background: #0b5394; color: white; cursor: pointer; }
+        input[type=submit]:hover { background: #073763; }
+    </style>
+</head>
+<body>
+    <div class="chat-box">
+        <h2>🧠 Customer Insight Chatbot</h2>
+        {% for msg in chat %}
+            <div class="message">
+                {% if msg.user %}
+                    <div class="user">You ({{ msg.time }}):</div>
+                    <div>{{ msg.user }}</div>
+                {% elif msg.bot %}
+                    <div class="bot">Bot ({{ msg.time }}):</div>
+                    <div>{{ msg.bot|safe }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <form method="POST">
+            <input type="text" name="user_input" placeholder="Ask something like 'Tell me about cluster 1'" required autofocus>
+            <input type="submit" value="Send">
+        </form>
+        <br>
+        <a href="/reset">🔄 Reset Chat</a>
+    </div>
+</body>
+</html>
