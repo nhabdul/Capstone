@@ -101,7 +101,7 @@ def cluster_aware_response(user_input):
         if cluster_id is None:
             return "Please ask about a product or cluster first so I know which group to analyze."
         subset = df_clusters[df_clusters['Cluster'] == cluster_id]
-        if "income" in msg:
+        if "income" in msg or "salary" in msg:
             return f"Average income in Cluster {cluster_id} is ${subset['Annual_Income'].mean():,.2f}."
         if "spend" in msg:
             return f"Average spending score in Cluster {cluster_id} is {subset['Spending_Score'].mean():.2f}."
