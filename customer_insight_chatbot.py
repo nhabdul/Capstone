@@ -199,8 +199,6 @@ def get_theme_css(dark_mode=False):
 </style>
 """
 
-st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
-
 # Initialize session state
 if 'messages' not in st.session_state:
     st.session_state.messages = []
@@ -212,6 +210,9 @@ if 'last_product' not in st.session_state:
     st.session_state.last_product = None
 if 'dark_theme' not in st.session_state:
     st.session_state.dark_theme = False
+
+# Apply theme CSS after session state is initialized
+st.markdown(get_theme_css(st.session_state.dark_theme), unsafe_allow_html=True)
 
 # Load your data (replace with your actual data loading)
 @st.cache_data
