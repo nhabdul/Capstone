@@ -551,9 +551,15 @@ with col2:
     
     # Display everything inside the bordered container
     st.markdown(f'''
-    <div class="chat-container">
+    <div class="chat-container" id="chatbox">
         {"".join(chat_content)}
     </div>
+    <script>
+        var chatbox = document.getElementById("chatbox");
+        if (chatbox) {{
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }}
+    </script>
     ''', unsafe_allow_html=True)
     
     # Input area with custom styling - seamlessly connected to chat container
