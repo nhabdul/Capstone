@@ -194,6 +194,7 @@ def gender_product_analysis(user_input):
             cluster_id = int(cluster_matches[0])
         except ValueError:
             pass
+
     
     # Start with all data or filter by cluster
     data_subset = df_clusters
@@ -262,7 +263,8 @@ def cluster_aware_response(user_input):
     input_lower = user_input.lower().strip()
 
     # Handle greetings
-    if any(greeting in input_lower for greeting in ["hello", "hi", "hey", "good morning", "good afternoon"]):
+    greeting_words = ["hello", "hi", "hey"]
+    if any(input_lower.startswith(greeting) or f" {greeting}" in input_lower for greeting in greeting_words):
         return ("👋 **Hello!** I'm your customer cluster analysis assistant.\n"
                 "I can help you explore customer segments. Try asking:\n"
                 "• *'Tell me about Cluster 0'*\n"
@@ -274,6 +276,7 @@ def cluster_aware_response(user_input):
     if gender_response:
         return gender_response
 
+    
     # Handle help requests
     if any(word in input_lower for word in ["help", "what can you do", "commands", "options"]):
         available_clusters = [int(x) for x in sorted(df_clusters['Cluster'].unique())]
@@ -477,4 +480,4 @@ def load_conversation():
         return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=3000)
