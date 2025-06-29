@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Insights Chatbot</title>
+    <style>
+        /* CSS Variables for theming */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --user-color: #007bff;
+            --bot-color: #333333;
+            --container-bg: #f1f3f4;
+            --input-bg: #ffffff;
+            --sidebar-bg: #f8f9fa;
+            --hover-bg: #e3f2fd;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --text-color: #ffffff;
+            --border-color: #444444;
+            --user-color: #4a9eff;
+            --bot-color: #ffffff;
+            --container-bg: #2d2d2d;
+            --input-bg: #333333;
+            --sidebar-bg: #2d2d2d;
+            --hover-bg: #404040;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--user-color);
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        .theme-toggle {
+            background: var(--user-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 1rem;
+            overflow-y: auto;
+            margin-top: 80px;
+        }
+
+        .sidebar-header {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        .clear-btn {
+            width: 100%;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .clear-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+
+        .history-item {
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid var(--user-color);
+        }
+
+        .history-item:hover {
+            background-color: var(--hover-bg);
+            transform: translateX(2px);
+        }
+
+        .history-time {
+            font-size: 0.8rem;
+            color: var(--user-color);
+            font-weight: bold;
+        }
+
+        .history-preview {
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            opacity: 0.8;
+            line-height: 1.3;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .history-btn {
+            background: var(--user-color);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .history-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* Main Chat Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-top: 80px;
+            padding: 1rem;
+        }
+
+        .chat-container {
+            flex: 1;
+            border: 2px solid var(--border-color);
+            border-radius: 10px 10px 0 0;
+            padding: 1.5rem;
+            background-color: var(--bg-color);
+            overflow-y: auto;
+            min-height: 400px;
+            max-height: calc(100vh - 300px);
+        }
+
+        .message {
+            margin: 1rem 0;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            text-align: right;
+            color: var(--user-color);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(74, 158, 255, 0.05));
+            border-radius: 18px 18px 4px 18px;
+            margin-left: 20%;
+            border: 1px solid rgba(74, 158, 255, 0.2);
+        }
+
+        .bot-message {
+            color: var(--bot-color);
+            padding: 0.75rem 1rem;
+            line-height: 1.6;
+            background: var(--container-bg);
+            border-radius: 18px 18px 18px 4px;
+            margin-right: 20%;
+            border: 1px solid var(--border-color);
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: var(--text-color);
+            opacity: 0.8;
+            padding: 2rem;
+            background: var(--container-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Input Area */
+        .input-container {
+            border: 2px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            padding: 1rem;
+            background-color: var(--input-bg);
+        }
+
+        .input-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: var(--user-color);
+            box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+        }
+
+        .send-btn {
+            background: var(--user-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            background: var(--container-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .quick-btn:hover {
+            background: var(--user-color);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            color: var(--user-color);
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(74, 158, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--user-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .header {
+                position: relative;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 200px;
+                margin-top: 0;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .main-content {
+                margin-top: 0;
+            }
+
+            .user-message, .bot-message {
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .quick-actions {
+                justify-content: center;
+            }
+
+            .quick-btn {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
+
+        /* Markdown-like styling for bot responses */
+        .bot-message h3 {
+            color: var(--user-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .bot-message strong {
+            color: var(--user-color);
+        }
+
+        .bot-message ul {
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🤖 Customer Insights Chatbot</h1>
+            <p>Ask me about customer clusters, products, and spending patterns!</p>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">💬 Chat History</div>
+            <button class="clear-btn" onclick="clearHistory()">🗑️ Clear History</button>
+            <div id="chat-history"></div>
+        </div>
+
+        <div class="main-content">
+            <div class="chat-container" id="chat-container">
+                <div class="welcome-message">
+                    <h3>👋 Hello! I'm your Customer Insights Assistant</h3>
+                    <p>I can help you explore customer data and clusters.</p>
+                    <br>
+                    <p><strong>Try asking me about:</strong></p>
+                    <p>• Specific clusters (e.g., "Tell me about cluster 1")</p>
+                    <p>• Product categories and customer preferences</p>
+                    <p>• Payment methods and device usage</p>
+                    <p>• Customer demographics and behavior</p>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <form class="input-form" onsubmit="sendMessage(event)">
+                    <input 
+                        type="text" 
+                        class="message-input" 
+                        id="message-input" 
+                        placeholder="Ask me about clusters, products, or customer data..."
+                        autocomplete="off"
+                    >
+                    <button type="submit" class="send-btn" id="send-btn">Send 📤</button>
+                </form>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div> Thinking...
+                </div>
+
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="sendQuickMessage('Show me available clusters')">🧠 Clusters</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Show me product categories')">🛍️ Products</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('What payment methods are available?')">💳 Payments</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('What devices do customers use?')">📱 Devices</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isDarkTheme = false;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChatHistory();
+            document.getElementById('message-input').focus();
+        });
+
+        // Theme toggle
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.setAttribute('data-theme', isDarkTheme ? 'dark' : 'light');
+            
+            fetch('/toggle_theme', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        // Send message function
+        async function sendMessage(event) {
+            event.preventDefault();
+            
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Disable input and show loading
+            input.disabled = true;
+            document.getElementById('send-btn').disabled = true;
+            document.getElementById('loading').classList.add('show');
+
+            // Add user message to chat
+            addMessageToChat('user', message);
+            input.value = '';
+
+            try {
+                const response = await fetch('/send_message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Add bot response to chat
+                    addMessageToChat('bot', data.bot_response);
+                    loadChatHistory(); // Refresh history
+                } else {
+                    addMessageToChat('bot', 'Sorry, there was an error processing your request.');
+                }
+            } catch (error) {
+                addMessageToChat('bot', 'Sorry, there was a connection error.');
+            } finally {
+                // Re-enable input and hide loading
+                input.disabled = false;
+                document.getElementById('send-btn').disabled = false;
+                document.getElementById('loading').classList.remove('show');
+                input.focus();
+            }
+        }
+
+        // Quick message function
+        function sendQuickMessage(message) {
+            document.getElementById('message-input').value = message;
+            sendMessage({ preventDefault: () => {} });
+        }
+
+        // Add message to chat display
+        function addMessageToChat(role, content) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+
+            if (role === 'user') {
+                messageDiv.innerHTML = `<div class="user-message">${escapeHtml(content)}</div>`;
+            } else {
+                messageDiv.innerHTML = `<div class="bot-message">${formatBotMessage(content)}</div>`;
+            }
+
+            // Remove welcome message if it exists
+            const welcomeMessage = chatContainer.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Format bot message with markdown-like styling
+        function formatBotMessage(content) {
+            return content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/### (.*?)\n/g, '<h3>$1</h3>')
+                .replace(/• (.*?)(?=\n|$)/g, '• $1<br>')
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // Escape HTML for user messages
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load chat history
+        async function loadChatHistory() {
+            try {
+                const response = await fetch('/get_chat_history');
+                const history = await response.json();
+                
+                const historyContainer = document.getElementById('chat-history');
+                historyContainer.innerHTML = '';
+
+                // Group history by time (similar to streamlit version)
+                const grouped = groupChatHistory(history);
+                
+                grouped.reverse().forEach((group, groupIndex) => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'history-item';
+                    
+                    const timeRange = group.length === 1 
+                        ? group[0].timestamp 
+                        : `${group[0].timestamp} - ${group[group.length - 1].timestamp}`;
+                    
+                    const previewText = group[0].user_message.substring(0, 40) + '...';
+                    
+                    groupDiv.innerHTML = `
+                        <div class="history-time">${timeRange} ${group.length > 1 ? `(${group.length} chats)` : ''}</div>
+                        <div class="history-preview">${escapeHtml(previewText)}</div>
+                        <div class="history-actions">
+                            <button class="history-btn" onclick="loadConversation('${escapeHtml(group[0].user_message)}', '${escapeHtml(group[0].bot_message)}')">🔄 Load</button>
+                        </div>
+                    `;
+                    
+                    historyContainer.appendChild(groupDiv);
+                });
+            } catch (error) {
+                console.error('Error loading chat history:', error);
+            }
+        }
+
+        // Group chat history by time (within 10 minutes)
+        function groupChatHistory(history) {
+            if (!history.length) return [];
+            
+            const grouped = [];
+            let currentGroup = [];
+            let currentTime = null;
+            
+            history.forEach(chat => {
+                const chatTime = new Date(`2024-01-01 ${chat.timestamp}`);
+                
+                if (!currentTime) {
+                    currentTime = chatTime;
+                    currentGroup = [chat];
+                } else {
+                    const timeDiff = Math.abs(chatTime - currentTime) / 1000; // seconds
+                    if (timeDiff <= 600) { // 10 minutes
+                        currentGroup.push(chat);
+                    } else {
+                        grouped.push(currentGroup);
+                        currentGroup = [chat];
+                        currentTime = chatTime;
+                    }
+                }
+            });
+            
+            if (currentGroup.length) {
+                grouped.push(currentGroup);
+            }
+            
+            return grouped;
+        }
+
+        // Load a specific conversation
+        async function loadConversation(userMessage, botMessage) {
+            try {
+                await fetch('/load_conversation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_message: userMessage,
+                        bot_message: botMessage
+                    })
+                });
+                
+                // Clear current chat and add the loaded conversation
+                const chatContainer = document.getElementById('chat-container');
+                chatContainer.innerHTML = '';
+                
+                addMessageToChat('user', userMessage);
+                addMessageToChat('bot', botMessage);
+                
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+            }
+        }
+
+        // Clear chat history
+        async function clearHistory() {
+            if (!confirm('Are you sure you want to clear all chat history?')) {
+                return;
+            }
+            
+            try {
+                await fetch('/clear_history', { method: 'POST' });
+                
+                // Clear the chat display
+                const chatContainer = document.getElementById('chat-container');
+                chatContainer.innerHTML = `
+                    <div class="welcome-message">
+                        <h3>👋 Hello! I'm your Customer Insights Assistant</h3>
+                        <p>I can help you explore customer data and clusters.</p>
+                        <br>
+                        <p><strong>Try asking me about:</strong></p>
+                        <p>• Specific clusters (e.g., "Tell me about cluster 1")</p>
+                        <p>• Product categories and customer preferences</p>
+                        <p>• Payment methods and device usage</p>
+                        <p>• Customer demographics and behavior</p>
+                    </div>
+                `;
+                
+                // Clear history sidebar
+                document.getElementById('chat-history').innerHTML = '';
+                
+            } catch (error) {
+                console.error('Error clearing history:', error);
+            }
+        }
+
+        // Handle Enter key in input
+        document.getElementById('message-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(e);
+            }
+        });
+
+        // Auto-resize chat container
+        function resizeChatContainer() {
+            const chatContainer = document.getElementById('chat-container');
+            const windowHeight = window.innerHeight;
+            const headerHeight = document.querySelector('.header').offsetHeight;
+            const inputHeight = document.querySelector('.input-container').offsetHeight;
+            const maxHeight = windowHeight - headerHeight - inputHeight - 100; // 100px buffer
+            
+            chatContainer.style.maxHeight = maxHeight + 'px';
+        }
+
+        // Resize on window resize
+        window.addEventListener('resize', resizeChatContainer);
+        window.addEventListener('load', resizeChatContainer);
+    </script>
+</body>
+</html>
